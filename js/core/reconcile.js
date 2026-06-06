@@ -1,25 +1,25 @@
-/**
- * reconcile.js — Bilapp
+﻿/**
+ * reconcile.js â€” Bilapp
  * -------------------------------------------------------
- * Moteur de réconciliation post-édition manuelle.
+ * Moteur de rÃ©conciliation post-Ã©dition manuelle.
  *
- * Reçoit un BilanData + les overrides + les BilanParams d'origine,
- * et retourne un nouveau BilanData cohérent où :
- *   1. Les postes verrouillés conservent leur valeur exacte
- *   2. Les postes CR liés sont recalibrés si le CA change
- *   3. Les dotations aux amortissements absorbent l'écart
- *      pour maintenir le résultat dans l'orientation d'origine
- *   4. Les stocks bilan sont reflétés dans la variationStocks CR
- *   5. resultatNet → passif.capitauxPropres.resultat → passif.total
- *   6. La trésorerie absorbe le déséquilibre actif/passif résiduel
+ * ReÃ§oit un BilanData + les overrides + les BilanParams d'origine,
+ * et retourne un nouveau BilanData cohÃ©rent oÃ¹ :
+ *   1. Les postes verrouillÃ©s conservent leur valeur exacte
+ *   2. Les postes CR liÃ©s sont recalibrÃ©s si le CA change
+ *   3. Les dotations aux amortissements absorbent l'Ã©cart
+ *      pour maintenir le rÃ©sultat dans l'orientation d'origine
+ *   4. Les stocks bilan sont reflÃ©tÃ©s dans la variationStocks CR
+ *   5. resultatNet â†’ passif.capitauxPropres.resultat â†’ passif.total
+ *   6. La trÃ©sorerie absorbe le dÃ©sÃ©quilibre actif/passif rÃ©siduel
  *
- * RÈGLE : fonctions pures — ne modifie jamais les objets reçus.
+ * RÃˆGLE : fonctions pures â€” ne modifie jamais les objets reÃ§us.
  */
 
 'use strict';
 
 import { isLocked }                              from './overrides.js';
-import { ORIENTATIONS, TAUX }                    from './constants.js';
+import { ORIENTATIONS, TAUX, PLANCHER_RESULTAT_NEUTRE } from './constants.js';
 
 // ============================================================
 // UTILITAIRES
@@ -48,12 +48,12 @@ function sumPostes(...postes) {
 }
 
 // ============================================================
-// ÉTAPE 1 — APPLIQUER LES OVERRIDES
+// Ã‰TAPE 1 â€” APPLIQUER LES OVERRIDES
 // ============================================================
 
 /**
- * Applique les overrides sur le BilanData cloné.
- * Pour les postes actif (brut/amort), recalcule le net avec clamp amort ≤ brut.
+ * Applique les overrides sur le BilanData clonÃ©.
+ * Pour les postes actif (brut/amort), recalcule le net avec clamp amort â‰¤ brut.
  * @param {object}             data
  * @param {Map<string,number>} overrides
  */
@@ -72,7 +72,7 @@ function appliquerOverrides(data, overrides) {
 }
 
 // ============================================================
-// ÉTAPE 2 — RECALIBRAGE CR APRÈS MODIFICATION CA
+// Ã‰TAPE 2 â€” RECALIBRAGE CR APRÃˆS MODIFICATION CA
 // ============================================================
 
 /**
@@ -84,10 +84,10 @@ function caEstModifie(overrides) {
 }
 
 /**
- * Quand le CA change, recalibre les charges non verrouillées
- * en conservant les ratios observés dans le BilanData d'origine.
+ * Quand le CA change, recalibre les charges non verrouillÃ©es
+ * en conservant les ratios observÃ©s dans le BilanData d'origine.
  *
- * @param {object} data     BilanData muté
+ * @param {object} data     BilanData mutÃ©
  * @param {object} original BilanData avant modification
  */
 function recalibrerChargesApresCA(data, original) {
@@ -98,7 +98,7 @@ function recalibrerChargesApresCA(data, original) {
   const ce = data.resultat.chargesExploitation;
   const oe = original.resultat.chargesExploitation;
 
-  // Charges recalibrées par ratio observé si non verrouillées
+  // Charges recalibrÃ©es par ratio observÃ© si non verrouillÃ©es
   for (const champ of ['achatsMarchandises', 'achatsMatieres', 'autresAchats', 'impotsTaxes', 'chargesPersonnel']) {
     if (!isLocked(`resultat.chargesExploitation.${champ}`)) {
       ce[champ] = Math.round(ca * (oe[champ] / caOriginal));
@@ -109,7 +109,7 @@ function recalibrerChargesApresCA(data, original) {
     ce.variationStocks = Math.round(ca * (oe.variationStocks / caOriginal));
   }
 
-  // Produits annexes recalibrés aussi
+  // Produits annexes recalibrÃ©s aussi
   const pe = data.resultat.produitsExploitation;
   const op = original.resultat.produitsExploitation;
   for (const champ of ['productionStockee', 'subventions', 'autresProduits']) {
@@ -120,15 +120,15 @@ function recalibrerChargesApresCA(data, original) {
 }
 
 // ============================================================
-// ÉTAPE 3 — SYNCHRONISATION STOCKS BILAN → VARIATION STOCKS CR
+// Ã‰TAPE 3 â€” SYNCHRONISATION STOCKS BILAN â†’ VARIATION STOCKS CR
 // ============================================================
 
 /**
- * Si des postes de stocks bilan ont été modifiés,
- * met à jour la variationStocks du CR.
+ * Si des postes de stocks bilan ont Ã©tÃ© modifiÃ©s,
+ * met Ã  jour la variationStocks du CR.
  *
  * Principe PCG : variation de stocks = stock final - stock initial.
- * Une augmentation de stock réduit les charges (signe négatif en compte 603).
+ * Une augmentation de stock rÃ©duit les charges (signe nÃ©gatif en compte 603).
  *
  * @param {object}             data
  * @param {object}             original
@@ -138,7 +138,7 @@ function synchroniserVariationStocks(data, original, overrides) {
   if (isLocked('resultat.chargesExploitation.variationStocks')) return;
 
   const postesStocksBrut = [
-    'bilan.actif.circulant.stocks.matieresPremières.brut',
+    'bilan.actif.circulant.stocks.matieresPremiÃ¨res.brut',
     'bilan.actif.circulant.stocks.enCours.brut',
     'bilan.actif.circulant.stocks.produitsFinis.brut',
     'bilan.actif.circulant.stocks.marchandises.brut',
@@ -149,23 +149,23 @@ function synchroniserVariationStocks(data, original, overrides) {
   const stockActuel   = data.bilan.actif.circulant.stocks.total.net;
   const stockOriginal = original.bilan.actif.circulant.stocks.total.net;
 
-  // Stock augmente → variation négative (moins de charges)
-  // Stock diminue → variation positive (plus de charges)
+  // Stock augmente â†’ variation nÃ©gative (moins de charges)
+  // Stock diminue â†’ variation positive (plus de charges)
   data.resultat.chargesExploitation.variationStocks = Math.round(stockOriginal - stockActuel);
 }
 
 // ============================================================
-// ÉTAPE 4 — RECALCUL CR + AJUSTEMENT DOTATIONS
+// Ã‰TAPE 4 â€” RECALCUL CR + AJUSTEMENT DOTATIONS
 // ============================================================
 
 /**
  * Recalcule les totaux CR et ajuste les dotations pour maintenir
- * le résultat net dans la fourchette d'orientation d'origine.
+ * le rÃ©sultat net dans la fourchette d'orientation d'origine.
  *
- * Si dotationsAmort est verrouillé, le résultat diverge librement
+ * Si dotationsAmort est verrouillÃ©, le rÃ©sultat diverge librement
  * (choix explicite de l'utilisateur).
  *
- * @param {object} resultat BilanData.resultat muté
+ * @param {object} resultat BilanData.resultat mutÃ©
  * @param {object} params   BilanParams d'origine
  */
 function recalculerCRAvecOrientation(resultat, params) {
@@ -182,11 +182,11 @@ function recalculerCRAvecOrientation(resultat, params) {
   resultat.resultatFinancier    = Math.round(resultat.produitsFinanciers - resultat.chargesFinancieres);
   resultat.resultatExceptionnel = Math.round(resultat.produitsExceptionnels - resultat.chargesExceptionnelles);
 
-  // Résultat cible = milieu de la fourchette d'orientation
+  // RÃ©sultat cible = milieu de la fourchette d'orientation
   const { minRatio, maxRatio } = ORIENTATIONS[params.finance.orientation];
   const resultatCible = Math.round(pe.ca * ((minRatio + maxRatio) / 2));
 
-  // IS recalculé sur la cible si non verrouillé
+  // IS recalculÃ© sur la cible si non verrouillÃ©
   if (!isLocked('resultat.impots')) {
     if (resultatCible > 0) {
       resultat.impots = resultatCible <= TAUX.SEUIL_IS_REDUIT
@@ -197,7 +197,7 @@ function recalculerCRAvecOrientation(resultat, params) {
     }
   }
 
-  // Dotations = variable d'ajustement si non verrouillées
+  // Dotations = variable d'ajustement si non verrouillÃ©es
   if (!isLocked('resultat.chargesExploitation.dotationsAmort')) {
     const resultatSansDA = Math.round(
       pe.total - chargesSansDA + resultat.resultatFinancier +
@@ -215,14 +215,19 @@ function recalculerCRAvecOrientation(resultat, params) {
     resultat.resultatCourant + resultat.resultatExceptionnel -
     resultat.participation - resultat.impots
   );
+
+  // Plancher résultat neutre — jamais 0 exact
+  if (params.finance.orientation === 'neutre' && Math.abs(resultat.resultatNet) < PLANCHER_RESULTAT_NEUTRE) {
+    resultat.resultatNet = resultat.resultatNet >= 0 ? PLANCHER_RESULTAT_NEUTRE : -PLANCHER_RESULTAT_NEUTRE;
+  }
 }
 
 // ============================================================
-// ÉTAPE 5 — RECALCUL TOTAUX ACTIF
+// Ã‰TAPE 5 â€” RECALCUL TOTAUX ACTIF
 // ============================================================
 
 /**
- * @param {object} actif BilanData.bilan.actif muté
+ * @param {object} actif BilanData.bilan.actif mutÃ©
  */
 function recalculerTotauxActif(actif) {
   const i = actif.immobilise;
@@ -232,7 +237,7 @@ function recalculerTotauxActif(actif) {
   i.total            = sumPostes(i.incorporel.total, i.corporel.total, i.financier.total);
 
   const c = actif.circulant;
-  c.stocks.total         = sumPostes(c.stocks.matieresPremières, c.stocks.enCours, c.stocks.produitsFinis, c.stocks.marchandises);
+  c.stocks.total         = sumPostes(c.stocks.matieresPremiÃ¨res, c.stocks.enCours, c.stocks.produitsFinis, c.stocks.marchandises);
   c.creances.total       = sumPostes(c.creances.clients, c.creances.autresCreances);
   c.disponibilites.total = sumPostes(c.disponibilites.vmp, c.disponibilites.banqueCaisse);
   c.total                = sumPostes(c.stocks.total, c.creances.total, c.disponibilites.total);
@@ -242,11 +247,11 @@ function recalculerTotauxActif(actif) {
 }
 
 // ============================================================
-// ÉTAPE 6 — RECALCUL TOTAUX PASSIF
+// Ã‰TAPE 6 â€” RECALCUL TOTAUX PASSIF
 // ============================================================
 
 /**
- * @param {object} passif BilanData.bilan.passif muté
+ * @param {object} passif BilanData.bilan.passif mutÃ©
  */
 function recalculerTotauxPassif(passif) {
   const cp = passif.capitauxPropres;
@@ -258,11 +263,11 @@ function recalculerTotauxPassif(passif) {
 }
 
 // ============================================================
-// ÉTAPE 7 — ÉQUILIBRAGE ACTIF / PASSIF
+// Ã‰TAPE 7 â€” Ã‰QUILIBRAGE ACTIF / PASSIF
 // ============================================================
 
 /**
- * Absorbe l'écart via la trésorerie. Retourne l'écart résiduel si tréso verrouillée.
+ * Absorbe l'Ã©cart via la trÃ©sorerie. Retourne l'Ã©cart rÃ©siduel si trÃ©so verrouillÃ©e.
  * @param {object} data
  * @returns {number}
  */
@@ -283,10 +288,10 @@ function equilibrer(data) {
 // ============================================================
 
 /**
- * Réconcilie un BilanData avec les overrides manuels.
+ * RÃ©concilie un BilanData avec les overrides manuels.
  *
- * @param {object}             bilanData  BilanData original (non muté)
- * @param {Map<string,number>} overrides  Registre des postes verrouillés
+ * @param {object}             bilanData  BilanData original (non mutÃ©)
+ * @param {Map<string,number>} overrides  Registre des postes verrouillÃ©s
  * @param {object}             params     BilanParams d'origine
  * @returns {{ data: object, desequilibre: number }}
  */
