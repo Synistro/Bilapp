@@ -9,11 +9,11 @@
  * Table des matières :
  *   1. Page document (wrapper + en-tête)
  *   2. Tableau comptable (structure commune)
- *   3. Bilan — Actif
- *   4. Bilan — Passif
- *   5. Compte de résultat
- *   6. Navigation entre documents
- *   7. Actions (impression, export)
+ *   3. Bilan — colonnes spécifiques
+ *   4. Compte de résultat — spécificités
+ *   5. Actions document
+ *   6. Édition inline — postes modifiables
+ *   7. Bandeau déséquilibre
  */
 
 /* ============================================================
@@ -26,7 +26,6 @@
   padding: var(--space-8) var(--space-6) var(--space-16);
 }
 
-/* En-tête du document — identité société + mention */
 .doc-header {
   display: flex;
   justify-content: space-between;
@@ -114,7 +113,6 @@
   text-align: right;
 }
 
-/* Onglets documents (bilan / résultat / annexe) */
 .doc-tabs {
   display: flex;
   gap: var(--space-2);
@@ -165,7 +163,6 @@
   border-bottom: 1px solid var(--color-border-light);
 }
 
-/* Bilan côte-à-côte (actif | passif) */
 .bilan-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -179,7 +176,6 @@
   }
 }
 
-/* Tableau comptable générique */
 .doc-table {
   width: 100%;
   border-collapse: collapse;
@@ -190,7 +186,6 @@
   overflow: hidden;
 }
 
-/* En-tête colonnes */
 .doc-table thead th {
   padding: var(--space-3) var(--space-4);
   font-size: var(--text-xs);
@@ -208,7 +203,6 @@
   text-align: left;
 }
 
-/* Cellules */
 .doc-table td {
   padding: var(--space-2) var(--space-4);
   border-bottom: 1px solid var(--color-border-light);
@@ -223,19 +217,14 @@
   color: var(--color-text-primary);
 }
 
-/* Zéros : atténués */
 .doc-table td.is-zero {
   color: var(--color-text-muted);
 }
 
-/* Dernière ligne d'un groupe : pas de bordure */
 .doc-table tr:last-child td {
   border-bottom: none;
 }
 
-/* ---- Lignes spéciales ---- */
-
-/* Ligne de section (ex: "ACTIF IMMOBILISÉ") */
 .doc-table tr.row--section td {
   background-color: var(--color-navy);
   color: var(--color-white);
@@ -246,7 +235,6 @@
   padding: var(--space-2) var(--space-4);
 }
 
-/* Ligne de sous-section (ex: "Incorporel") */
 .doc-table tr.row--subsection td {
   background-color: #eef1f6;
   color: var(--color-navy);
@@ -256,7 +244,6 @@
   letter-spacing: 0.05em;
 }
 
-/* Ligne de total intermédiaire */
 .doc-table tr.row--subtotal td {
   font-weight: var(--weight-semibold);
   color: var(--color-text-primary);
@@ -265,7 +252,6 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-/* Ligne de total général */
 .doc-table tr.row--total td {
   font-weight: var(--weight-bold);
   color: var(--color-navy);
@@ -274,21 +260,18 @@
   font-size: var(--text-sm);
 }
 
-/* Ligne de poste de détail — indent */
 .doc-table td.col--libelle {
   padding-left: var(--space-8);
 }
 
-/* Colonne N-1 : légèrement atténuée */
 .doc-table td.col--n1 {
   color: var(--color-text-muted);
 }
 
 /* ============================================================
-   3. BILAN — EN-TÊTES COLONNES SPÉCIFIQUES
+   3. BILAN — COLONNES SPÉCIFIQUES
    ============================================================ */
 
-/* Colonne libellé : prend la majorité de l'espace */
 .doc-table .col-width--libelle { width: 45%; }
 .doc-table .col-width--brut    { width: 15%; }
 .doc-table .col-width--amort   { width: 15%; }
@@ -303,7 +286,6 @@
 .doc-table .col-width--cr-montant { width: 20%; }
 .doc-table .col-width--cr-n1      { width: 25%; }
 
-/* Résultat net — ligne finale mise en valeur */
 .doc-table tr.row--resultat-net td {
   font-size: var(--text-base);
   font-weight: var(--weight-bold);
@@ -312,7 +294,6 @@
   border-top: 2px solid var(--color-navy-dark);
 }
 
-/* Résultat positif / négatif */
 .doc-table td.is-positive { color: var(--color-success); }
 .doc-table td.is-negative { color: var(--color-error); }
 
@@ -336,5 +317,124 @@
 
 .doc-actions__right {
   display: flex;
+  align-items: center;
   gap: var(--space-3);
+}
+
+/* ============================================================
+   6. ÉDITION INLINE — POSTES MODIFIABLES
+   ============================================================ */
+
+/* Curseur crayon au survol des cellules éditables */
+.doc-table td.is-editable {
+  cursor: text;
+  position: relative;
+  transition: background-color var(--transition-fast);
+}
+
+.doc-table td.is-editable:hover {
+  background-color: #f0f4ff;
+  outline: 1px dashed var(--color-accent);
+  outline-offset: -2px;
+}
+
+/* Input inline affiché lors de l'édition */
+.cell-input {
+  width: 100%;
+  min-width: 80px;
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  border: 2px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-white);
+  color: var(--color-text-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(46, 95, 163, 0.15);
+}
+
+/* Cellule verrouillée — fond ambre + icône cadenas */
+.doc-table td.is-locked {
+  background-color: #fff8e8;
+  cursor: default;
+}
+
+.doc-table td.is-locked::after {
+  content: ' 🔒';
+  font-size: 0.65rem;
+  opacity: 0.7;
+  margin-left: var(--space-1);
+}
+
+/* Pastille orange sur le libellé si la ligne a un poste verrouillé */
+.doc-table tr.has-lock td:first-child::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-warning);
+  margin-right: var(--space-2);
+  vertical-align: middle;
+}
+
+/* Compteur de postes verrouillés dans la barre d'actions */
+.lock-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  padding: var(--space-1) var(--space-3);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+.lock-count__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background-color: var(--color-warning);
+  color: var(--color-white);
+  font-size: 10px;
+  font-weight: var(--weight-bold);
+  border-radius: 50%;
+}
+
+/* ============================================================
+   7. BANDEAU DÉSÉQUILIBRE
+   ============================================================ */
+
+.desequilibre-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-5);
+  background-color: var(--color-error-bg);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-error);
+}
+
+.desequilibre-banner__icon {
+  font-size: var(--text-lg);
+  flex-shrink: 0;
+}
+
+.desequilibre-banner__text strong {
+  font-weight: var(--weight-bold);
+}
+
+.desequilibre-banner__ecart {
+  margin-left: auto;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
