@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bilapp — Générateur de bilans comptables pédagogiques</title>
+  <meta name="description" content="Outil pédagogique de génération de documents comptables français conformes au PCG. À des fins de formation uniquement." />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/form.css" />
+  <link rel="stylesheet" href="css/documents.css" />
+  <link rel="stylesheet" href="css/print.css" />
+</head>
+<body>
+
+  <!-- Bandeau mention légale — toujours visible -->
+  <div id="mentionFictif" role="alert" aria-live="polite">
+    DOCUMENT FICTIF — À DES FINS PÉDAGOGIQUES UNIQUEMENT
+  </div>
+
+  <!-- Conteneur principal -->
+  <main id="app">
+    <!-- Contenu injecté dynamiquement par app.js -->
+  </main>
+
+  <!-- Point d'entrée JS — type="module" active les imports ES6 -->
+  <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
