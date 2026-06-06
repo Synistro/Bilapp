@@ -15,7 +15,7 @@
 
 import { fmt, zeroCls, buildHeader, buildTabs } from '../utils/doc-helpers.js';
 import { buildResultat }                         from './resultat.js';
-import { setOverride, removeOverride, isLocked, getOverrides, clearOverrides, countOverrides } from '../core/overrides.js';
+import { setOverride, isLocked, getOverrides, clearOverrides, countOverrides } from '../core/overrides.js';
 import { reconcile }                             from '../core/reconcile.js';
 import { exportDocument }                        from '../export/pdf.js';
 
@@ -53,7 +53,7 @@ function activerEdition(td, path, valeur, onCommit) {
   if (td.querySelector('.cell-input')) return;
 
   const original = td.textContent.trim();
-  const input = document.createElement('input');
+  const input    = document.createElement('input');
   input.type      = 'text';
   input.className = 'cell-input';
   input.value     = valeur === 0 ? '' : String(valeur);
@@ -77,7 +77,6 @@ function activerEdition(td, path, valeur, onCommit) {
     if (e.key === 'Enter')  { e.preventDefault(); commit(); }
     if (e.key === 'Escape') { td.textContent = original; }
   });
-
   input.addEventListener('blur', commit);
 }
 
@@ -110,10 +109,9 @@ function buildDesequilibreBanner(ecart) {
 // ============================================================
 
 /**
- * Ligne de poste actif avec édition inline sur brut et amort.
  * @param {string}      libelle
  * @param {object}      p        { brut, amort, net }
- * @param {string}      basePath Chemin dot-notation sans .brut/.amort/.net
+ * @param {string}      basePath Chemin sans .brut/.amort/.net
  * @param {number|null} n1Net
  * @param {boolean}     indent
  * @returns {string}
@@ -122,20 +120,16 @@ function rowActif(libelle, p, basePath, n1Net = null, indent = true) {
   const brutPath  = basePath + '.brut';
   const amortPath = basePath + '.amort';
   const netPath   = basePath + '.net';
-
   const lockedBrut  = isLocked(brutPath);
   const lockedAmort = isLocked(amortPath);
   const hasLock     = lockedBrut || lockedAmort || isLocked(netPath);
-
-  const n1Cell = n1Net !== null
-    ? `<td class="col--n1 ${zeroCls(n1Net)}">${fmt(n1Net)}</td>`
-    : '';
+  const n1Cell = n1Net !== null ? `<td class="col--n1 ${zeroCls(n1Net)}">${fmt(n1Net)}</td>` : '';
 
   return `
     <tr class="${hasLock ? 'has-lock' : ''}">
       <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}</td>
-      <td class="is-editable ${lockedBrut ? 'is-locked' : ''} ${zeroCls(p.brut)}"
-          data-path="${brutPath}" data-value="${p.brut}">${fmt(p.brut)}</td>
+      <td class="is-editable ${lockedBrut  ? 'is-locked' : ''} ${zeroCls(p.brut)}"
+          data-path="${brutPath}"  data-value="${p.brut}">${fmt(p.brut)}</td>
       <td class="is-editable ${lockedAmort ? 'is-locked' : ''} ${zeroCls(p.amort)}"
           data-path="${amortPath}" data-value="${p.amort}">${fmt(p.amort)}</td>
       <td class="${zeroCls(p.net)}" data-path="${netPath}">${fmt(p.net)}</td>
@@ -149,9 +143,7 @@ function rowActifSubtotal(libelle, p, n1Net = null) {
   return `
     <tr class="row--subtotal">
       <td>${libelle}</td>
-      <td>${fmt(p.brut)}</td>
-      <td>${fmt(p.amort)}</td>
-      <td>${fmt(p.net)}</td>
+      <td>${fmt(p.brut)}</td><td>${fmt(p.amort)}</td><td>${fmt(p.net)}</td>
       ${n1Cell}
     </tr>
   `;
@@ -161,14 +153,9 @@ function rowActifSubtotal(libelle, p, n1Net = null) {
 // ACTIF — TABLEAU COMPLET
 // ============================================================
 
-/**
- * @param {object}      bilan
- * @param {object|null} n1
- * @returns {string}
- */
 function buildActif(bilan, n1) {
-  const a     = bilan.actif;
-  const an1   = n1?.bilan?.actif ?? null;
+  const a    = bilan.actif;
+  const an1  = n1?.bilan?.actif ?? null;
   const hasN1 = an1 !== null;
   const cols  = hasN1 ? 5 : 4;
   const thN1  = hasN1 ? `<th class="col-width--n1">N-1 Net</th>` : '';
@@ -180,59 +167,57 @@ function buildActif(bilan, n1) {
       <div class="doc-section__title">Actif</div>
       <table class="doc-table">
         <colgroup>
-          <col class="col-width--libelle" />
-          <col class="col-width--brut" />
-          <col class="col-width--amort" />
-          <col class="col-width--net" />
-          ${hasN1 ? '<col class="col-width--n1" />' : ''}
+          <col class="col-width--libelle"/>
+          <col class="col-width--brut"/>
+          <col class="col-width--amort"/>
+          <col class="col-width--net"/>
+          ${hasN1 ? '<col class="col-width--n1"/>' : ''}
         </colgroup>
-        <thead>
-          <tr><th></th><th>Brut</th><th>Amort / Dép.</th><th>Net</th>${thN1}</tr>
-        </thead>
+        <thead><tr><th></th><th>Brut</th><th>Amort / Dép.</th><th>Net</th>${thN1}</tr></thead>
         <tbody>
           <tr class="row--section"><td colspan="${cols}">Actif immobilisé</td></tr>
           <tr class="row--subsection"><td colspan="${cols}">Immobilisations incorporelles</td></tr>
-          ${rowActif('Frais d\'établissement',     a.immobilise.incorporel.fraisEtablissement, `${b}.immobilise.incorporel.fraisEtablissement`, n1v(x => x.immobilise.incorporel.fraisEtablissement.net))}
-          ${rowActif('Frais de R&D',               a.immobilise.incorporel.fraisRD,            `${b}.immobilise.incorporel.fraisRD`,            n1v(x => x.immobilise.incorporel.fraisRD.net))}
-          ${rowActif('Brevets, licences, marques', a.immobilise.incorporel.brevets,            `${b}.immobilise.incorporel.brevets`,            n1v(x => x.immobilise.incorporel.brevets.net))}
-          ${rowActif('Fonds commercial',           a.immobilise.incorporel.fondsCommercial,    `${b}.immobilise.incorporel.fondsCommercial`,    n1v(x => x.immobilise.incorporel.fondsCommercial.net))}
-          ${rowActif('Autres immos incorporelles', a.immobilise.incorporel.autresIncorporel,   `${b}.immobilise.incorporel.autresIncorporel`,   n1v(x => x.immobilise.incorporel.autresIncorporel.net))}
-          ${rowActifSubtotal('Total incorporel',   a.immobilise.incorporel.total,              n1v(x => x.immobilise.incorporel.total.net))}
+          ${rowActif('Frais d\'établissement',     a.immobilise.incorporel.fraisEtablissement, `${b}.immobilise.incorporel.fraisEtablissement`, n1v(x=>x.immobilise.incorporel.fraisEtablissement.net))}
+          ${rowActif('Frais de R&D',               a.immobilise.incorporel.fraisRD,            `${b}.immobilise.incorporel.fraisRD`,            n1v(x=>x.immobilise.incorporel.fraisRD.net))}
+          ${rowActif('Brevets, licences, marques', a.immobilise.incorporel.brevets,            `${b}.immobilise.incorporel.brevets`,            n1v(x=>x.immobilise.incorporel.brevets.net))}
+          ${rowActif('Fonds commercial',           a.immobilise.incorporel.fondsCommercial,    `${b}.immobilise.incorporel.fondsCommercial`,    n1v(x=>x.immobilise.incorporel.fondsCommercial.net))}
+          ${rowActif('Autres immos incorporelles', a.immobilise.incorporel.autresIncorporel,   `${b}.immobilise.incorporel.autresIncorporel`,   n1v(x=>x.immobilise.incorporel.autresIncorporel.net))}
+          ${rowActifSubtotal('Total incorporel',   a.immobilise.incorporel.total,              n1v(x=>x.immobilise.incorporel.total.net))}
 
           <tr class="row--subsection"><td colspan="${cols}">Immobilisations corporelles</td></tr>
-          ${rowActif('Terrains',                 a.immobilise.corporel.terrains,       `${b}.immobilise.corporel.terrains`,       n1v(x => x.immobilise.corporel.terrains.net))}
-          ${rowActif('Constructions',            a.immobilise.corporel.constructions,  `${b}.immobilise.corporel.constructions`,  n1v(x => x.immobilise.corporel.constructions.net))}
-          ${rowActif('Installations techniques', a.immobilise.corporel.installations,  `${b}.immobilise.corporel.installations`,  n1v(x => x.immobilise.corporel.installations.net))}
-          ${rowActif('Autres immos corporelles', a.immobilise.corporel.autresCorporel, `${b}.immobilise.corporel.autresCorporel`, n1v(x => x.immobilise.corporel.autresCorporel.net))}
-          ${rowActifSubtotal('Total corporel',   a.immobilise.corporel.total,          n1v(x => x.immobilise.corporel.total.net))}
+          ${rowActif('Terrains',                 a.immobilise.corporel.terrains,       `${b}.immobilise.corporel.terrains`,       n1v(x=>x.immobilise.corporel.terrains.net))}
+          ${rowActif('Constructions',            a.immobilise.corporel.constructions,  `${b}.immobilise.corporel.constructions`,  n1v(x=>x.immobilise.corporel.constructions.net))}
+          ${rowActif('Installations techniques', a.immobilise.corporel.installations,  `${b}.immobilise.corporel.installations`,  n1v(x=>x.immobilise.corporel.installations.net))}
+          ${rowActif('Autres immos corporelles', a.immobilise.corporel.autresCorporel, `${b}.immobilise.corporel.autresCorporel`, n1v(x=>x.immobilise.corporel.autresCorporel.net))}
+          ${rowActifSubtotal('Total corporel',   a.immobilise.corporel.total,          n1v(x=>x.immobilise.corporel.total.net))}
 
           <tr class="row--subsection"><td colspan="${cols}">Immobilisations financières</td></tr>
-          ${rowActif('Participations',           a.immobilise.financier.participations, `${b}.immobilise.financier.participations`, n1v(x => x.immobilise.financier.participations.net))}
-          ${rowActif('Autres immos financières', a.immobilise.financier.autresFinancier,`${b}.immobilise.financier.autresFinancier`,n1v(x => x.immobilise.financier.autresFinancier.net))}
-          ${rowActifSubtotal('Total financier',  a.immobilise.financier.total,          n1v(x => x.immobilise.financier.total.net))}
-          ${rowActifSubtotal('TOTAL ACTIF IMMOBILISÉ', a.immobilise.total,              n1v(x => x.immobilise.total.net))}
+          ${rowActif('Participations',           a.immobilise.financier.participations, `${b}.immobilise.financier.participations`, n1v(x=>x.immobilise.financier.participations.net))}
+          ${rowActif('Autres immos financières', a.immobilise.financier.autresFinancier,`${b}.immobilise.financier.autresFinancier`,n1v(x=>x.immobilise.financier.autresFinancier.net))}
+          ${rowActifSubtotal('Total financier',  a.immobilise.financier.total,          n1v(x=>x.immobilise.financier.total.net))}
+          ${rowActifSubtotal('TOTAL ACTIF IMMOBILISÉ', a.immobilise.total,              n1v(x=>x.immobilise.total.net))}
 
           <tr class="row--section"><td colspan="${cols}">Actif circulant</td></tr>
           <tr class="row--subsection"><td colspan="${cols}">Stocks et en-cours</td></tr>
-          ${rowActif('Matières premières',     a.circulant.stocks.matieresPremières, `${b}.circulant.stocks.matieresPremières`, n1v(x => x.circulant.stocks.matieresPremières.net))}
-          ${rowActif('En-cours de production', a.circulant.stocks.enCours,           `${b}.circulant.stocks.enCours`,           n1v(x => x.circulant.stocks.enCours.net))}
-          ${rowActif('Produits finis',         a.circulant.stocks.produitsFinis,     `${b}.circulant.stocks.produitsFinis`,     n1v(x => x.circulant.stocks.produitsFinis.net))}
-          ${rowActif('Marchandises',           a.circulant.stocks.marchandises,      `${b}.circulant.stocks.marchandises`,      n1v(x => x.circulant.stocks.marchandises.net))}
-          ${rowActifSubtotal('Total stocks',   a.circulant.stocks.total,             n1v(x => x.circulant.stocks.total.net))}
+          ${rowActif('Matières premières',     a.circulant.stocks.matieresPremières, `${b}.circulant.stocks.matieresPremières`, n1v(x=>x.circulant.stocks.matieresPremières.net))}
+          ${rowActif('En-cours de production', a.circulant.stocks.enCours,           `${b}.circulant.stocks.enCours`,           n1v(x=>x.circulant.stocks.enCours.net))}
+          ${rowActif('Produits finis',         a.circulant.stocks.produitsFinis,     `${b}.circulant.stocks.produitsFinis`,     n1v(x=>x.circulant.stocks.produitsFinis.net))}
+          ${rowActif('Marchandises',           a.circulant.stocks.marchandises,      `${b}.circulant.stocks.marchandises`,      n1v(x=>x.circulant.stocks.marchandises.net))}
+          ${rowActifSubtotal('Total stocks',   a.circulant.stocks.total,             n1v(x=>x.circulant.stocks.total.net))}
 
           <tr class="row--subsection"><td colspan="${cols}">Créances</td></tr>
-          ${rowActif('Clients et comptes rattachés', a.circulant.creances.clients,        `${b}.circulant.creances.clients`,        n1v(x => x.circulant.creances.clients.net))}
-          ${rowActif('Autres créances',              a.circulant.creances.autresCreances, `${b}.circulant.creances.autresCreances`, n1v(x => x.circulant.creances.autresCreances.net))}
-          ${rowActifSubtotal('Total créances',       a.circulant.creances.total,          n1v(x => x.circulant.creances.total.net))}
+          ${rowActif('Clients et comptes rattachés', a.circulant.creances.clients,        `${b}.circulant.creances.clients`,        n1v(x=>x.circulant.creances.clients.net))}
+          ${rowActif('Autres créances',              a.circulant.creances.autresCreances, `${b}.circulant.creances.autresCreances`, n1v(x=>x.circulant.creances.autresCreances.net))}
+          ${rowActifSubtotal('Total créances',       a.circulant.creances.total,          n1v(x=>x.circulant.creances.total.net))}
 
           <tr class="row--subsection"><td colspan="${cols}">Disponibilités</td></tr>
-          ${rowActif('Valeurs mobilières de placement', a.circulant.disponibilites.vmp,          `${b}.circulant.disponibilites.vmp`,          n1v(x => x.circulant.disponibilites.vmp.net))}
-          ${rowActif('Banques, caisses',                a.circulant.disponibilites.banqueCaisse, `${b}.circulant.disponibilites.banqueCaisse`, n1v(x => x.circulant.disponibilites.banqueCaisse.net))}
-          ${rowActifSubtotal('Total disponibilités',    a.circulant.disponibilites.total,        n1v(x => x.circulant.disponibilites.total.net))}
-          ${rowActifSubtotal('TOTAL ACTIF CIRCULANT',   a.circulant.total,                       n1v(x => x.circulant.total.net))}
+          ${rowActif('Valeurs mobilières de placement', a.circulant.disponibilites.vmp,          `${b}.circulant.disponibilites.vmp`,          n1v(x=>x.circulant.disponibilites.vmp.net))}
+          ${rowActif('Banques, caisses',                a.circulant.disponibilites.banqueCaisse, `${b}.circulant.disponibilites.banqueCaisse`, n1v(x=>x.circulant.disponibilites.banqueCaisse.net))}
+          ${rowActifSubtotal('Total disponibilités',    a.circulant.disponibilites.total,        n1v(x=>x.circulant.disponibilites.total.net))}
+          ${rowActifSubtotal('TOTAL ACTIF CIRCULANT',   a.circulant.total,                       n1v(x=>x.circulant.total.net))}
 
           <tr class="row--section"><td colspan="${cols}">Comptes de régularisation</td></tr>
-          ${rowActif('Charges constatées d\'avance', a.regularisation.chargesConstatees, `${b}.regularisation.chargesConstatees`, n1v(x => x.regularisation.chargesConstatees.net), false)}
+          ${rowActif('Charges constatées d\'avance', a.regularisation.chargesConstatees, `${b}.regularisation.chargesConstatees`, n1v(x=>x.regularisation.chargesConstatees.net), false)}
 
           <tr class="row--total">
             <td>TOTAL ACTIF</td><td></td><td></td>
@@ -249,14 +234,6 @@ function buildActif(bilan, n1) {
 // PASSIF — CONSTRUCTEURS DE LIGNES
 // ============================================================
 
-/**
- * @param {string}      libelle
- * @param {number}      montant
- * @param {string}      path
- * @param {number|null} n1
- * @param {boolean}     indent
- * @returns {string}
- */
 function rowPassif(libelle, montant, path, n1 = null, indent = true) {
   const locked = isLocked(path);
   const n1Cell = n1 !== null ? `<td class="col--n1 ${zeroCls(n1)}">${fmt(n1)}</td>` : '';
@@ -272,25 +249,16 @@ function rowPassif(libelle, montant, path, n1 = null, indent = true) {
 
 function rowPassifSubtotal(libelle, montant, n1 = null) {
   const n1Cell = n1 !== null ? `<td class="col--n1">${fmt(n1)}</td>` : '';
-  return `
-    <tr class="row--subtotal">
-      <td>${libelle}</td><td>${fmt(montant)}</td>${n1Cell}
-    </tr>
-  `;
+  return `<tr class="row--subtotal"><td>${libelle}</td><td>${fmt(montant)}</td>${n1Cell}</tr>`;
 }
 
 // ============================================================
 // PASSIF — TABLEAU COMPLET
 // ============================================================
 
-/**
- * @param {object}      bilan
- * @param {object|null} n1
- * @returns {string}
- */
 function buildPassif(bilan, n1) {
-  const p     = bilan.passif;
-  const pn1   = n1?.bilan?.passif ?? null;
+  const p    = bilan.passif;
+  const pn1  = n1?.bilan?.passif ?? null;
   const hasN1 = pn1 !== null;
   const cols  = hasN1 ? 3 : 2;
   const thN1  = hasN1 ? `<th class="col-width--n1">N-1</th>` : '';
@@ -302,41 +270,38 @@ function buildPassif(bilan, n1) {
       <div class="doc-section__title">Passif</div>
       <table class="doc-table">
         <colgroup>
-          <col style="width:60%" />
-          <col style="width:${hasN1 ? '20%' : '40%'}" />
-          ${hasN1 ? '<col style="width:20%" />' : ''}
+          <col style="width:60%"/>
+          <col style="width:${hasN1 ? '20%' : '40%'}"/>
+          ${hasN1 ? '<col style="width:20%"/>' : ''}
         </colgroup>
-        <thead>
-          <tr><th></th><th>Montant</th>${thN1}</tr>
-        </thead>
+        <thead><tr><th></th><th>Montant</th>${thN1}</tr></thead>
         <tbody>
           <tr class="row--section"><td colspan="${cols}">Capitaux propres</td></tr>
-          ${rowPassif('Capital social',          p.capitauxPropres.capital,        `${b}.capitauxPropres.capital`,        n1v(x => x.capitauxPropres.capital))}
-          ${rowPassif('Primes d\'émission',      p.capitauxPropres.primesEmission, `${b}.capitauxPropres.primesEmission`, n1v(x => x.capitauxPropres.primesEmission))}
-          ${rowPassif('Réserve légale',          p.capitauxPropres.reserveLegale,  `${b}.capitauxPropres.reserveLegale`,  n1v(x => x.capitauxPropres.reserveLegale))}
-          ${rowPassif('Autres réserves',         p.capitauxPropres.autresReserves, `${b}.capitauxPropres.autresReserves`, n1v(x => x.capitauxPropres.autresReserves))}
-          ${rowPassif('Report à nouveau',        p.capitauxPropres.reportANouveau, `${b}.capitauxPropres.reportANouveau`, n1v(x => x.capitauxPropres.reportANouveau))}
-          ${rowPassif('Résultat de l\'exercice', p.capitauxPropres.resultat,       `${b}.capitauxPropres.resultat`,       n1v(x => x.capitauxPropres.resultat))}
-          ${rowPassifSubtotal('TOTAL CAPITAUX PROPRES', p.capitauxPropres.total,   n1v(x => x.capitauxPropres.total))}
+          ${rowPassif('Capital social',          p.capitauxPropres.capital,        `${b}.capitauxPropres.capital`,        n1v(x=>x.capitauxPropres.capital))}
+          ${rowPassif('Primes d\'émission',      p.capitauxPropres.primesEmission, `${b}.capitauxPropres.primesEmission`, n1v(x=>x.capitauxPropres.primesEmission))}
+          ${rowPassif('Réserve légale',          p.capitauxPropres.reserveLegale,  `${b}.capitauxPropres.reserveLegale`,  n1v(x=>x.capitauxPropres.reserveLegale))}
+          ${rowPassif('Autres réserves',         p.capitauxPropres.autresReserves, `${b}.capitauxPropres.autresReserves`, n1v(x=>x.capitauxPropres.autresReserves))}
+          ${rowPassif('Report à nouveau',        p.capitauxPropres.reportANouveau, `${b}.capitauxPropres.reportANouveau`, n1v(x=>x.capitauxPropres.reportANouveau))}
+          ${rowPassif('Résultat de l\'exercice', p.capitauxPropres.resultat,       `${b}.capitauxPropres.resultat`,       n1v(x=>x.capitauxPropres.resultat))}
+          ${rowPassifSubtotal('TOTAL CAPITAUX PROPRES', p.capitauxPropres.total,   n1v(x=>x.capitauxPropres.total))}
 
           <tr class="row--section"><td colspan="${cols}">Provisions</td></tr>
-          ${rowPassif('Provisions pour risques', p.provisions.risques, `${b}.provisions.risques`, n1v(x => x.provisions.risques))}
-          ${rowPassif('Provisions pour charges', p.provisions.charges, `${b}.provisions.charges`, n1v(x => x.provisions.charges))}
-          ${rowPassifSubtotal('TOTAL PROVISIONS', p.provisions.total,  n1v(x => x.provisions.total))}
+          ${rowPassif('Provisions pour risques', p.provisions.risques, `${b}.provisions.risques`, n1v(x=>x.provisions.risques))}
+          ${rowPassif('Provisions pour charges', p.provisions.charges, `${b}.provisions.charges`, n1v(x=>x.provisions.charges))}
+          ${rowPassifSubtotal('TOTAL PROVISIONS', p.provisions.total,  n1v(x=>x.provisions.total))}
 
           <tr class="row--section"><td colspan="${cols}">Dettes</td></tr>
-          ${rowPassif('Emprunts et dettes financières',    p.dettes.emprunts,         `${b}.dettes.emprunts`,         n1v(x => x.dettes.emprunts))}
-          ${rowPassif('Fournisseurs et comptes rattachés', p.dettes.fournisseurs,     `${b}.dettes.fournisseurs`,     n1v(x => x.dettes.fournisseurs))}
-          ${rowPassif('Dettes fiscales et sociales',       p.dettes.fiscalesSociales, `${b}.dettes.fiscalesSociales`, n1v(x => x.dettes.fiscalesSociales))}
-          ${rowPassif('Autres dettes',                     p.dettes.autresDettes,     `${b}.dettes.autresDettes`,     n1v(x => x.dettes.autresDettes))}
-          ${rowPassifSubtotal('TOTAL DETTES', p.dettes.total, n1v(x => x.dettes.total))}
+          ${rowPassif('Emprunts et dettes financières',    p.dettes.emprunts,         `${b}.dettes.emprunts`,         n1v(x=>x.dettes.emprunts))}
+          ${rowPassif('Fournisseurs et comptes rattachés', p.dettes.fournisseurs,     `${b}.dettes.fournisseurs`,     n1v(x=>x.dettes.fournisseurs))}
+          ${rowPassif('Dettes fiscales et sociales',       p.dettes.fiscalesSociales, `${b}.dettes.fiscalesSociales`, n1v(x=>x.dettes.fiscalesSociales))}
+          ${rowPassif('Autres dettes',                     p.dettes.autresDettes,     `${b}.dettes.autresDettes`,     n1v(x=>x.dettes.autresDettes))}
+          ${rowPassifSubtotal('TOTAL DETTES', p.dettes.total, n1v(x=>x.dettes.total))}
 
           <tr class="row--section"><td colspan="${cols}">Comptes de régularisation</td></tr>
-          ${rowPassif('Produits constatés d\'avance', p.regularisation.produitsConstates, `${b}.regularisation.produitsConstates`, n1v(x => x.regularisation.produitsConstates), false)}
+          ${rowPassif('Produits constatés d\'avance', p.regularisation.produitsConstates, `${b}.regularisation.produitsConstates`, n1v(x=>x.regularisation.produitsConstates), false)}
 
           <tr class="row--total">
-            <td>TOTAL PASSIF</td>
-            <td>${fmt(p.total)}</td>
+            <td>TOTAL PASSIF</td><td>${fmt(p.total)}</td>
             ${hasN1 ? `<td class="col--n1">${fmt(pn1.total)}</td>` : ''}
           </tr>
         </tbody>
@@ -357,7 +322,8 @@ function bindEdition() {
 
       activerEdition(td, path, valeur, (p, newVal) => {
         setOverride(p, newVal);
-        const { data, desequilibre } = reconcile(_currentData, getOverrides());
+        // _currentParams passé pour que reconcile respecte l'orientation d'origine
+        const { data, desequilibre } = reconcile(_currentData, getOverrides(), _currentParams);
         _currentData = data;
         renderTab(_currentTab, desequilibre);
       });
@@ -382,19 +348,11 @@ function updateLockCount() {
 // RENDER TAB
 // ============================================================
 
-/**
- * @param {string} tab
- * @param {number} desequilibre
- */
 function renderTab(tab, desequilibre = 0) {
   _currentTab = tab;
-  const app = document.getElementById('app');
+  const app   = document.getElementById('app');
 
-  const titres = {
-    bilan:    'Bilan comptable',
-    resultat: 'Compte de résultat',
-    annexe:   'Annexe comptable',
-  };
+  const titres = { bilan: 'Bilan comptable', resultat: 'Compte de résultat', annexe: 'Annexe comptable' };
 
   let content = '';
   if (tab === 'bilan') {
@@ -408,7 +366,6 @@ function renderTab(tab, desequilibre = 0) {
   } else if (tab === 'resultat') {
     content = buildResultat(_currentData.resultat, _currentData.n1);
   }
-  // tab === 'annexe' → P7
 
   app.innerHTML = `
     <header class="app-header">
@@ -447,7 +404,6 @@ function renderTab(tab, desequilibre = 0) {
     window.location.reload();
   });
 
-  // Câblé sur exportDocument() — prépare le DOM avant window.print()
   app.querySelector('#btnPrint')?.addEventListener('click', () => {
     exportDocument('#docContent');
   });
@@ -458,7 +414,6 @@ function renderTab(tab, desequilibre = 0) {
 // ============================================================
 
 /**
- * Initialise et affiche les documents.
  * @param {object} data    BilanData complet
  * @param {object} params  BilanParams
  */
