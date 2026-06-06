@@ -1,14 +1,14 @@
-﻿/**
- * engine.js â€” Bilapp
+/**
+ * engine.js — Bilapp
  * -------------------------------------------------------
- * Moteur de calcul comptable. ReÃ§oit un objet BilanParams
+ * Moteur de calcul comptable. Reçoit un objet BilanParams
  * (produit par form.js) et retourne un objet BilanData complet.
  *
- * RÃˆGLES :
- * - Fonctions pures : zÃ©ro DOM, zÃ©ro Ã©tat global, zÃ©ro effet de bord
- * - ZÃ©ro magic numbers : toutes les constantes viennent de constants.js
- * - Tous les montants arrondis Ã  l'euro (Math.round)
- * - Ã‰quilibre bilan garanti : actif.totalNet === passif.total (Â±1â‚¬)
+ * RÈGLES :
+ * - Fonctions pures : zéro DOM, zéro état global, zéro effet de bord
+ * - Zéro magic numbers : toutes les constantes viennent de constants.js
+ * - Tous les montants arrondis à l'euro (Math.round)
+ * - Équilibre bilan garanti : actif.totalNet === passif.total (±1€)
  */
 
 'use strict';
@@ -28,39 +28,21 @@ import {
 // UTILITAIRES
 // ============================================================
 
-/**
- * Retourne un entier alÃ©atoire dans [min, max] (inclus).
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
 function randInt(min, max) {
   return Math.round(min + Math.random() * (max - min));
 }
 
-/**
- * Retourne un flottant alÃ©atoire dans [min, max].
- * @param {number} min
- * @param {number} max
- * @returns {number}
- */
 function randFloat(min, max) {
   return min + Math.random() * (max - min);
 }
 
-/**
- * Applique une variation alÃ©atoire Â±VARIATION_MONTANTS Ã  un montant de base.
- * Permet d'Ã©viter les chiffres ronds suspects sur un document pÃ©dagogique.
- * @param {number} base
- * @returns {number}
- */
 function varier(base) {
   return Math.round(base * (1 + randFloat(-VARIATION_MONTANTS, VARIATION_MONTANTS)));
 }
 
 /**
  * Construit un poste d'actif brut/amort/net.
- * L'amort est clampÃ© Ã  brut â€” un amort > brut est comptablement impossible.
+ * L'amort est clampé à brut — un amort > brut est comptablement impossible.
  * @param {number} brut
  * @param {number} amort
  * @returns {{ brut: number, amort: number, net: number }}
@@ -71,54 +53,31 @@ function poste(brut, amort = 0) {
   return { brut: b, amort: a, net: b - a };
 }
 
-/**
- * Additionne plusieurs postes brut/amort/net en un total.
- * @param {...{ brut: number, amort: number, net: number }} postes
- * @returns {{ brut: number, amort: number, net: number }}
- */
 function totalPostes(...postes) {
   return postes.reduce(
-    (acc, p) => ({
-      brut:  acc.brut  + p.brut,
-      amort: acc.amort + p.amort,
-      net:   acc.net   + p.net,
-    }),
+    (acc, p) => ({ brut: acc.brut + p.brut, amort: acc.amort + p.amort, net: acc.net + p.net }),
     { brut: 0, amort: 0, net: 0 }
   );
 }
 
 // ============================================================
-// CALCUL DU COMPTE DE RÃ‰SULTAT
+// COMPTE DE RÉSULTAT
 // ============================================================
 
-/**
- * Calcule le compte de rÃ©sultat Ã  partir des paramÃ¨tres.
- * Le rÃ©sultat net est la contrainte centrale qui pilote l'Ã©quilibre bilan.
- *
- * @param {object} params   BilanParams complet
- * @param {number} ca       Chiffre d'affaires tirÃ©
- * @returns {object}        Structure resultat du BilanData
- */
 function calculerResultat(params, ca) {
   const { secteur }     = params.societe;
   const { orientation } = params.finance;
   const ratios          = RATIOS_SECTORIELS[secteur];
 
-  const productionStockee  = params.finance.hasStocks
-    ? varier(ca * randFloat(0.01, 0.04)) : 0;
-  const subventions        = varier(ca * randFloat(0.00, 0.01));
-  const autresProduits     = varier(ca * randFloat(0.005, 0.02));
-  const totalProduitsExpl  = Math.round(ca + productionStockee + subventions + autresProduits);
+  const productionStockee = params.finance.hasStocks ? varier(ca * randFloat(0.01, 0.04)) : 0;
+  const subventions       = varier(ca * randFloat(0.00, 0.01));
+  const autresProduits    = varier(ca * randFloat(0.005, 0.02));
+  const totalProduitsExpl = Math.round(ca + productionStockee + subventions + autresProduits);
 
-  const achatsMarchandises = varier(ca * randFloat(
-    ratios.achats_marchandises.min, ratios.achats_marchandises.max
-  ));
+  const achatsMarchandises = varier(ca * randFloat(ratios.achats_marchandises.min, ratios.achats_marchandises.max));
   const variationStocks    = params.finance.hasStocks ? -productionStockee : 0;
-  const achatsMatieres     = secteur === 'industrie'
-    ? varier(ca * randFloat(0.05, 0.15)) : 0;
-  const autresAchats       = varier(ca * randFloat(
-    ratios.charges_externes.min, ratios.charges_externes.max
-  ));
+  const achatsMatieres     = secteur === 'industrie' ? varier(ca * randFloat(0.05, 0.15)) : 0;
+  const autresAchats       = varier(ca * randFloat(ratios.charges_externes.min, ratios.charges_externes.max));
   const impotsTaxes        = varier(ca * randFloat(0.005, 0.015));
   const chargesPersonnel   = params.taille.nbEmployes !== 'aucun'
     ? varier(ca * randFloat(ratios.charges_personnel.min, ratios.charges_personnel.max)) : 0;
@@ -169,17 +128,9 @@ function calculerResultat(params, ca) {
 }
 
 // ============================================================
-// CALCUL DU BILAN
+// ACTIF IMMOBILISÉ
 // ============================================================
 
-/**
- * Construit l'actif immobilisÃ©.
- * Retourne zÃ©ro sur tous les postes si hasImmobilisations = false.
- *
- * @param {object} params  BilanParams
- * @param {number} ca      Chiffre d'affaires
- * @returns {object}       Structure actif.immobilise
- */
 function calculerActifImmobilise(params, ca) {
   if (!params.finance.hasImmobilisations) {
     const zero = poste(0, 0);
@@ -211,8 +162,7 @@ function calculerActifImmobilise(params, ca) {
   const participations  = params.finance.hasInternational ? poste(varier(ca * randFloat(0.02, 0.10))) : poste(0);
   const autresFinancier = poste(varier(ca * randFloat(0.00, 0.02)));
   const totalFinancier  = totalPostes(participations, autresFinancier);
-
-  const total = totalPostes(totalIncorporel, totalCorporel, totalFinancier);
+  const total           = totalPostes(totalIncorporel, totalCorporel, totalFinancier);
 
   return {
     incorporel: { fraisEtablissement, fraisRD, brevets, fondsCommercial, autresIncorporel, total: totalIncorporel },
@@ -222,30 +172,24 @@ function calculerActifImmobilise(params, ca) {
   };
 }
 
-/**
- * Construit l'actif circulant.
- * La trÃ©sorerie (banqueCaisse) est calculÃ©e en dernier comme variable d'ajustement.
- *
- * @param {object} params       BilanParams
- * @param {number} ca           Chiffre d'affaires
- * @param {number} passifTotal  Total passif
- * @param {number} actifImmoNet Total net actif immobilisÃ©
- * @returns {{ circulant, regularisation }}
- */
+// ============================================================
+// ACTIF CIRCULANT
+// ============================================================
+
 function calculerActifCirculant(params, ca, passifTotal, actifImmoNet) {
   const ratios = RATIOS_SECTORIELS[params.societe.secteur];
   const zero   = poste(0);
 
   let stocks;
   if (!params.finance.hasStocks || ratios.stocks.max === 0) {
-    stocks = { matieresPremiÃ¨res: zero, enCours: zero, produitsFinis: zero, marchandises: zero, total: zero };
+    stocks = { matieresPremières: zero, enCours: zero, produitsFinis: zero, marchandises: zero, total: zero };
   } else {
     const { secteur } = params.societe;
-    const matieresPremiÃ¨res = secteur === 'industrie' ? poste(varier(ca * randFloat(ratios.stocks.min * 0.4, ratios.stocks.max * 0.4))) : zero;
+    const matieresPremières = secteur === 'industrie' ? poste(varier(ca * randFloat(ratios.stocks.min * 0.4, ratios.stocks.max * 0.4))) : zero;
     const enCours           = secteur === 'industrie' ? poste(varier(ca * randFloat(0.01, 0.05))) : zero;
     const produitsFinis     = secteur !== 'commerce'  ? poste(varier(ca * randFloat(0.02, 0.08))) : zero;
     const marchandises      = secteur === 'commerce'  ? poste(varier(ca * randFloat(ratios.stocks.min, ratios.stocks.max))) : zero;
-    stocks = { matieresPremiÃ¨res, enCours, produitsFinis, marchandises, total: totalPostes(matieresPremiÃ¨res, enCours, produitsFinis, marchandises) };
+    stocks = { matieresPremières, enCours, produitsFinis, marchandises, total: totalPostes(matieresPremières, enCours, produitsFinis, marchandises) };
   }
 
   const clients        = poste(varier(ca * randFloat(ratios.creances_clients.min, ratios.creances_clients.max)));
@@ -275,14 +219,10 @@ function calculerActifCirculant(params, ca, passifTotal, actifImmoNet) {
   };
 }
 
-/**
- * Construit le passif complet.
- *
- * @param {object} params      BilanParams
- * @param {number} ca          Chiffre d'affaires
- * @param {number} resultatNet RÃ©sultat net du compte de rÃ©sultat
- * @returns {object}           Structure bilan.passif
- */
+// ============================================================
+// PASSIF
+// ============================================================
+
 function calculerPassif(params, ca, resultatNet) {
   const { formeJuridique } = params.societe;
   const { ca: tranche }    = params.taille;
@@ -325,12 +265,7 @@ function calculerPassif(params, ca, resultatNet) {
 // ============================================================
 
 /**
- * GÃ©nÃ¨re un objet BilanData complet Ã  partir de BilanParams.
- *
- * Contraintes garanties :
- *   - actif.totalNet === passif.total (Â±1â‚¬)
- *   - resultat.resultatNet === passif.capitauxPropres.resultat
- *
+ * Génère un objet BilanData complet à partir de BilanParams.
  * @param {object} params  BilanParams produit par form.js
  * @returns {object}       BilanData complet
  */
@@ -341,14 +276,10 @@ export function generate(params) {
   const resultat        = calculerResultat(params, ca);
   const passif          = calculerPassif(params, ca, resultat.resultatNet);
   const actifImmobilise = calculerActifImmobilise(params, ca);
-
-  const { circulant, regularisation } = calculerActifCirculant(
-    params, ca, passif.total, actifImmobilise.total.net
-  );
+  const { circulant, regularisation } = calculerActifCirculant(params, ca, passif.total, actifImmobilise.total.net);
 
   let totalNet = Math.round(actifImmobilise.total.net + circulant.total.net + regularisation.total.net);
-
-  const ecart = passif.total - totalNet;
+  const ecart  = passif.total - totalNet;
   if (Math.abs(ecart) <= 1 && ecart !== 0) {
     circulant.disponibilites.banqueCaisse.net  += ecart;
     circulant.disponibilites.banqueCaisse.brut += ecart;
@@ -370,9 +301,7 @@ export function generate(params) {
     const resultatN1 = calculerResultat(params, caN1);
     const passifN1   = calculerPassif(params, caN1, resultatN1.resultatNet);
     const immoN1     = calculerActifImmobilise(params, caN1);
-    const { circulant: circN1, regularisation: regulN1 } = calculerActifCirculant(
-      params, caN1, passifN1.total, immoN1.total.net
-    );
+    const { circulant: circN1, regularisation: regulN1 } = calculerActifCirculant(params, caN1, passifN1.total, immoN1.total.net);
     let totalNetN1 = Math.round(immoN1.total.net + circN1.total.net + regulN1.total.net);
     const ecartN1  = passifN1.total - totalNetN1;
     if (Math.abs(ecartN1) <= 1 && ecartN1 !== 0) {
