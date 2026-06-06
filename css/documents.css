@@ -4,135 +4,189 @@
  * Bilan, compte de résultat, annexe.
  *
  * Dépend de main.css pour les variables CSS.
- * Ne redéfinit aucune variable — utilise uniquement :root.
- *
- * Table des matières :
- *   1. Page document (wrapper + en-tête)
- *   2. Tableau comptable (structure commune)
- *   3. Bilan — colonnes spécifiques
- *   4. Compte de résultat — spécificités
- *   5. Actions document
- *   6. Édition inline — postes modifiables
- *   7. Bandeau déséquilibre
+ * Toutes les couleurs et espacements viennent de main.css.
  */
 
 /* ============================================================
-   1. PAGE DOCUMENT
+   APP HEADER (injecté dynamiquement par bilan.js)
+   ============================================================ */
+
+.app-header {
+  background: var(--color-navy);
+  padding: var(--space-4) 0;
+  flex-shrink: 0;
+}
+
+.app-header .container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.app-header__logo {
+  font-family: var(--font-doc);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  color: var(--color-white);
+  letter-spacing: -0.02em;
+}
+
+.app-header__logo span {
+  color: #f0c040;
+}
+
+.app-header__subtitle {
+  font-size: var(--text-xs);
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ============================================================
+   DOC PAGE — conteneur principal du document
    ============================================================ */
 
 .doc-page {
-  max-width: var(--max-width-doc);
+  flex: 1;
+  max-width: var(--max-width-wide);
   margin: 0 auto;
-  padding: var(--space-8) var(--space-6) var(--space-16);
+  width: 100%;
+  padding: var(--space-6) var(--space-6) var(--space-12);
 }
+
+/* ============================================================
+   DOC HEADER — en-tête identité société
+   ============================================================ */
 
 .doc-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: var(--space-8);
-  padding: var(--space-8);
-  background-color: var(--color-navy);
-  border-radius: var(--radius-lg);
+  background: var(--color-navy);
   color: var(--color-white);
-  margin-bottom: var(--space-8);
-}
-
-.doc-header__left {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6) var(--space-8);
+  margin-bottom: var(--space-6);
+  gap: var(--space-8);
 }
 
 .doc-header__logo {
-  font-family: var(--font-ui);
   font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.5);
   text-transform: uppercase;
-  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-2);
 }
 
 .doc-header__societe {
-  font-family: var(--font-doc);
   font-size: var(--text-2xl);
   font-weight: var(--weight-bold);
-  color: var(--color-white);
+  font-family: var(--font-doc);
   line-height: var(--leading-tight);
+  margin-bottom: var(--space-2);
 }
 
 .doc-header__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  margin-top: var(--space-2);
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+  color: rgba(255,255,255,0.75);
 }
 
-.doc-header__meta-item {
-  font-size: var(--text-xs);
-  color: rgba(255,255,255,0.70);
-}
-
-.doc-header__meta-item strong {
-  color: rgba(255,255,255,0.90);
+.doc-header__meta strong {
+  color: var(--color-white);
   font-weight: var(--weight-semibold);
 }
 
 .doc-header__right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--space-3);
+  text-align: right;
   flex-shrink: 0;
 }
 
 .doc-header__title {
-  font-family: var(--font-ui);
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
-  color: var(--color-white);
-  text-align: right;
+  margin-bottom: var(--space-2);
 }
 
 .doc-header__exercice {
   font-size: var(--text-sm);
-  color: rgba(255,255,255,0.70);
-  text-align: right;
+  color: rgba(255,255,255,0.75);
+  margin-bottom: var(--space-3);
 }
 
 .doc-header__mention {
+  display: inline-block;
   font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.05em;
   color: var(--color-fictif-text);
-  background-color: var(--color-fictif-bg);
+  background: var(--color-fictif-bg);
   border: 1px solid var(--color-fictif-border);
-  padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-sm);
-  text-align: right;
+  padding: var(--space-1) var(--space-3);
 }
+
+/* ============================================================
+   DOC ACTIONS — barre de boutons
+   ============================================================ */
+
+.doc-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.doc-actions__left,
+.doc-actions__right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lock-count {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.lock-count__badge {
+  background: var(--color-navy);
+  color: var(--color-white);
+  border-radius: var(--radius-full);
+  padding: 1px 6px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+
+/* ============================================================
+   DOC TABS — onglets de navigation
+   ============================================================ */
 
 .doc-tabs {
   display: flex;
-  gap: var(--space-2);
+  gap: 0;
+  border-bottom: 2px solid var(--color-border);
   margin-bottom: var(--space-6);
-  border-bottom: 2px solid var(--color-border-light);
-  padding-bottom: 0;
 }
 
 .doc-tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
   padding: var(--space-3) var(--space-5);
   font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-medium);
   color: var(--color-text-muted);
-  border: none;
-  background: none;
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
   transition: color var(--transition-fast), border-color var(--transition-fast);
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  white-space: nowrap;
 }
 
 .doc-tab:hover {
@@ -140,28 +194,14 @@
 }
 
 .doc-tab.is-active {
-  color: var(--color-accent);
-  border-bottom-color: var(--color-accent);
+  color: var(--color-navy);
+  font-weight: var(--weight-semibold);
+  border-bottom-color: var(--color-navy);
 }
 
 /* ============================================================
-   2. TABLEAU COMPTABLE — STRUCTURE COMMUNE
+   LAYOUT BILAN (actif + passif côte à côte)
    ============================================================ */
-
-.doc-section {
-  margin-bottom: var(--space-8);
-}
-
-.doc-section__title {
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  margin-bottom: var(--space-4);
-  padding-bottom: var(--space-2);
-  border-bottom: 1px solid var(--color-border-light);
-}
 
 .bilan-layout {
   display: grid;
@@ -170,252 +210,184 @@
   align-items: start;
 }
 
-@media (max-width: 768px) {
-  .bilan-layout {
-    grid-template-columns: 1fr;
-  }
+@media (max-width: 900px) {
+  .bilan-layout { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   SECTION DOCUMENT
+   ============================================================ */
+
+.doc-section {
+  margin-bottom: var(--space-6);
+}
+
+.doc-section__title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-white);
+  background: var(--color-navy);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ============================================================
+   TABLEAU COMPTABLE
+   ============================================================ */
 
 .doc-table {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--text-sm);
-  background-color: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.doc-table thead th {
-  padding: var(--space-3) var(--space-4);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  background-color: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
-  text-align: right;
-  white-space: nowrap;
-}
-
-.doc-table thead th:first-child {
-  text-align: left;
-}
-
-.doc-table td {
-  padding: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--color-border-light);
-  vertical-align: middle;
-  text-align: right;
-  color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
-.doc-table td:first-child {
-  text-align: left;
-  color: var(--color-text-primary);
-}
-
-.doc-table td.is-zero {
-  color: var(--color-text-muted);
-}
-
-.doc-table tr:last-child td {
-  border-bottom: none;
-}
-
-.doc-table tr.row--section td {
-  background-color: var(--color-navy);
-  color: var(--color-white);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-bold);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: var(--space-2) var(--space-4);
-}
-
-.doc-table tr.row--subsection td {
-  background-color: #eef1f6;
-  color: var(--color-navy);
+.doc-table th {
+  text-align: right;
   font-weight: var(--weight-semibold);
+  color: var(--color-text-muted);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 2px solid var(--color-border);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-.doc-table tr.row--subtotal td {
-  font-weight: var(--weight-semibold);
-  color: var(--color-text-primary);
-  background-color: #f8f9fb;
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
+.doc-table th:first-child { text-align: left; }
+
+.doc-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-light);
+  vertical-align: middle;
 }
 
-.doc-table tr.row--total td {
-  font-weight: var(--weight-bold);
-  color: var(--color-navy);
-  background-color: #e8ecf4;
-  border-top: 2px solid var(--color-navy);
-  font-size: var(--text-sm);
-}
-
-.doc-table td.col--libelle {
-  padding-left: var(--space-8);
-}
-
-.doc-table td.col--n1 {
-  color: var(--color-text-muted);
-}
+.doc-table td:not(:first-child) { text-align: right; }
 
 /* ============================================================
-   3. BILAN — COLONNES SPÉCIFIQUES
+   TYPES DE LIGNES
    ============================================================ */
 
-.doc-table .col-width--libelle { width: 45%; }
-.doc-table .col-width--brut    { width: 15%; }
-.doc-table .col-width--amort   { width: 15%; }
-.doc-table .col-width--net     { width: 12%; }
-.doc-table .col-width--n1      { width: 13%; }
-
-/* ============================================================
-   4. COMPTE DE RÉSULTAT — SPÉCIFICITÉS
-   ============================================================ */
-
-.doc-table .col-width--cr-libelle { width: 55%; }
-.doc-table .col-width--cr-montant { width: 20%; }
-.doc-table .col-width--cr-n1      { width: 25%; }
-
-.doc-table tr.row--resultat-net td {
-  font-size: var(--text-base);
+.doc-table .row--section td {
   font-weight: var(--weight-bold);
-  background-color: var(--color-navy);
+  background: var(--color-navy);
   color: var(--color-white);
-  border-top: 2px solid var(--color-navy-dark);
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.doc-table td.is-positive { color: var(--color-success); }
-.doc-table td.is-negative { color: var(--color-error); }
+.doc-table .row--subsection td {
+  font-weight: var(--weight-medium);
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding-top: var(--space-2);
+  font-size: var(--text-xs);
+  background: none;
+}
+
+.doc-table .row--subtotal td {
+  font-weight: var(--weight-bold);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 2px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.doc-table .row--total td {
+  font-weight: var(--weight-bold);
+  border-top: 3px solid var(--color-navy);
+  font-size: var(--text-base);
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+  background: none;
+}
+
+.doc-table .row--resultat-net td {
+  font-weight: var(--weight-bold);
+  border-top: 3px double var(--color-navy);
+  font-size: var(--text-base);
+  padding-top: var(--space-3);
+  padding-bottom: var(--space-3);
+}
 
 /* ============================================================
-   5. ACTIONS DOCUMENT
+   COULEURS RÉSULTAT
    ============================================================ */
 
-.doc-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-6);
-  flex-wrap: wrap;
-}
+.doc-table .is-positive { color: var(--color-success); }
+.doc-table .is-negative { color: var(--color-error); }
+.doc-table .is-zero     { color: var(--color-text-muted); opacity: 0.45; }
 
-.doc-actions__left {
-  display: flex;
-  gap: var(--space-3);
-}
+/* ============================================================
+   COLONNES
+   ============================================================ */
 
-.doc-actions__right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+.col-width--libelle { width: 40%; }
+.col-width--brut    { width: 18%; }
+.col-width--amort   { width: 18%; }
+.col-width--net     { width: 14%; }
+.col-width--n1      { width: 10%; }
+
+.col-width--cr-libelle { width: 55%; }
+.col-width--cr-montant { width: 25%; }
+.col-width--cr-n1      { width: 20%; }
+
+.col--n1 {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
 }
 
 /* ============================================================
-   6. ÉDITION INLINE — POSTES MODIFIABLES
+   ÉDITION INLINE
    ============================================================ */
 
-/* Curseur crayon au survol des cellules éditables */
 .doc-table td.is-editable {
-  cursor: text;
-  position: relative;
-  transition: background-color var(--transition-fast);
+  cursor: pointer;
+  transition: background var(--transition-fast);
 }
 
 .doc-table td.is-editable:hover {
-  background-color: #f0f4ff;
-  outline: 1px dashed var(--color-accent);
-  outline-offset: -2px;
+  background: rgba(46, 95, 163, 0.07);
 }
 
-/* Input inline affiché lors de l'édition */
+.doc-table td.is-locked::after {
+  content: ' 🔒';
+  font-size: 0.65em;
+  opacity: 0.55;
+}
+
+.doc-table tr.has-lock {
+  background: rgba(26, 44, 78, 0.03);
+}
+
 .cell-input {
   width: 100%;
-  min-width: 80px;
-  padding: var(--space-1) var(--space-2);
-  font: inherit;
+  text-align: right;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  padding: 2px var(--space-2);
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
-  text-align: right;
-  border: 2px solid var(--color-accent);
-  border-radius: var(--radius-sm);
-  background-color: var(--color-white);
+  background: var(--color-surface);
   color: var(--color-text-primary);
   outline: none;
   box-shadow: 0 0 0 3px rgba(46, 95, 163, 0.15);
 }
 
-/* Cellule verrouillée — fond ambre + icône cadenas */
-.doc-table td.is-locked {
-  background-color: #fff8e8;
-  cursor: default;
-}
-
-.doc-table td.is-locked::after {
-  content: ' 🔒';
-  font-size: 0.65rem;
-  opacity: 0.7;
-  margin-left: var(--space-1);
-}
-
-/* Pastille orange sur le libellé si la ligne a un poste verrouillé */
-.doc-table tr.has-lock td:first-child::before {
-  content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: var(--color-warning);
-  margin-right: var(--space-2);
-  vertical-align: middle;
-}
-
-/* Compteur de postes verrouillés dans la barre d'actions */
-.lock-count {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  padding: var(--space-1) var(--space-3);
-  background-color: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-}
-
-.lock-count__badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  background-color: var(--color-warning);
-  color: var(--color-white);
-  font-size: 10px;
-  font-weight: var(--weight-bold);
-  border-radius: 50%;
-}
-
 /* ============================================================
-   7. BANDEAU DÉSÉQUILIBRE
+   BANDEAU DÉSÉQUILIBRE
    ============================================================ */
 
 .desequilibre-banner {
   display: flex;
   align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-3) var(--space-5);
-  background-color: var(--color-error-bg);
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-error-bg);
   border: 1px solid var(--color-error);
   border-radius: var(--radius-md);
   margin-bottom: var(--space-4);
@@ -423,18 +395,50 @@
   color: var(--color-error);
 }
 
-.desequilibre-banner__icon {
-  font-size: var(--text-lg);
-  flex-shrink: 0;
-}
-
-.desequilibre-banner__text strong {
-  font-weight: var(--weight-bold);
-}
-
+.desequilibre-banner__icon        { font-size: var(--text-lg); flex-shrink: 0; }
+.desequilibre-banner__text strong { font-weight: var(--weight-bold); }
 .desequilibre-banner__ecart {
   margin-left: auto;
   font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* ============================================================
+   ANNEXE — STYLES SPÉCIFIQUES
+   ============================================================ */
+
+.annexe-wrapper .doc-section {
+  margin-bottom: var(--space-8);
+}
+
+.annexe-table td.col--num,
+.annexe-table th.col--num { text-align: right; }
+
+.annexe-table td.is-placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.35;
+}
+
+.annexe-table--compact            { font-size: var(--text-xs); }
+.annexe-table--compact td,
+.annexe-table--compact th         { padding: var(--space-1) var(--space-2); }
+
+.annexe-table td.col--center,
+.annexe-table th.col--center      { text-align: center; }
+
+.annexe-note {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: var(--space-2) 0 var(--space-3);
+  line-height: 1.65;
+}
+
+.annexe-subtitle {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin: var(--space-4) 0 var(--space-1);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-border-light);
 }

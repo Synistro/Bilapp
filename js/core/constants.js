@@ -258,3 +258,19 @@ export const VARIATION_MONTANTS = 0.15; // ±15%
 // ============================================================
 
 export const PLANCHER_RESULTAT_NEUTRE = 1_000; // €
+
+// ============================================================
+// DURÉES D'AMORTISSEMENT PAR CATÉGORIE (PCG 2024)
+// Utilisées dans l'annexe comptable — bloc méthodes et modes.
+// Les fourchettes reflètent les usages courants admis par l'administration.
+// ============================================================
+
+export const DUREES_AMORT = {
+  fraisEtablissement: { min: 5,  max: 5,  methode: 'Linéaire', label: 'Frais d\'établissement' },
+  fraisRD:            { min: 3,  max: 5,  methode: 'Linéaire', label: 'Frais de R&D' },
+  brevets:            { min: 5,  max: 20, methode: 'Linéaire', label: 'Brevets, licences, marques' },
+  fondsCommercial:    { min: 10, max: 10, methode: 'Linéaire', label: 'Fonds commercial (durée limitée)' },
+  constructions:      { min: 20, max: 50, methode: 'Linéaire', label: 'Constructions' },
+  installations:      { min: 5,  max: 10, methode: 'Linéaire / Dégressif', label: 'Installations techniques' },
+  autresCorporel:     { min: 3,  max: 10, methode: 'Linéaire / Dégressif', label: 'Autres immobilisations corporelles' },
+};

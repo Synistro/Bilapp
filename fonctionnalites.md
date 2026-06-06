@@ -29,8 +29,8 @@
 | F10 | Rendu bilan comptable HTML | ✅ | bilan.js |
 | F11 | Rendu compte de résultat HTML | ✅ | resultat.js |
 | F12 | Navigation par onglets entre documents | ✅ | bilan.js — buildTabs |
-| F13 | Rendu annexe | 🔴 | P7 |
-| F14 | Rendu liasse fiscale Cerfa 2050-2058 | 🔴 | P8 |
+| F13 | Rendu annexe (4 sections) | ✅ | annexe.js — lecture seule |
+| F14 | Rendu liasse fiscale Cerfa 2050-2058 | 🟢 | P8 — spécifié, 12 imprimés, codes lignes exacts, option A (HTML fidèle Cerfa) |
 
 ## Édition inline
 
@@ -49,6 +49,7 @@
 | F30 | Recalibrage charges par ratio si CA modifié | ✅ | reconcile.js |
 | F31 | Sync variation stocks bilan → CR (PCG) | ✅ | reconcile.js |
 | F32 | Orientation respectée après édition | ✅ | reconcile.js — dotations |
+| F33 | Bouton "Regénérer" — relance engine sur postes non verrouillés | 🔴 | Garde les overrides, régénère le reste |
 
 ## Export
 
@@ -58,7 +59,26 @@
 | F41 | En-tête navy imprimé avec couleurs | ✅ | print-color-adjust |
 | F42 | Mention fictif en pied de page | ✅ | .print-footer |
 | F43 | Saut de page actif / passif | ✅ | print.css |
-| F44 | Export Excel / CSV | 🔴 | Backlog |
+| F44 | Save session → download `.json` | ✅ | P7b — session.js, bouton 💾 |
+| F45 | Load session → upload `.json` → restore | ✅ | P7b — session.js, bouton 📂 |
+| F46 | Export Excel / CSV | 🔴 | Backlog |
+
+## Liasse fiscale (P8)
+
+| # | Fonctionnalité | Statut | Notes |
+|---|---------------|--------|-------|
+| F70 | Imprimé 2050 — Bilan actif Cerfa | 🟢 | Codes lignes exacts AA–BJ |
+| F71 | Imprimé 2051 — Bilan passif Cerfa | 🟢 | Codes lignes exacts DA–EK |
+| F72 | Imprimé 2052 — CR produits Cerfa | 🟢 | Codes lignes exacts FA–GG |
+| F73 | Imprimé 2053 — CR charges Cerfa | 🟢 | Codes lignes exacts HA–HZ |
+| F74 | Imprimé 2054 — Tableau immobilisations | 🟢 | |
+| F75 | Imprimé 2055 — Tableau amortissements | 🟢 | |
+| F76 | Imprimé 2056 — Tableau provisions | 🟢 | |
+| F77 | Imprimé 2057 — Créances et dettes | 🟢 | |
+| F78 | Imprimé 2058-A — Résultat fiscal | 🟢 | Réintégrations simulées (0.5–2% charges externes) |
+| F79 | Imprimé 2058-B — Déficits reportables | 🟢 | Affiché si résultat négatif |
+| F80 | Imprimé 2058-C — Affectation résultat | 🟢 | |
+| F81 | Imprimé 2059-A — Valeurs mobilières | 🟢 | |
 
 ## Paramétrage pédagogique
 
@@ -68,15 +88,18 @@
 | F51 | Aspect international | ✅ | hasInternational |
 | F52 | Choix forme juridique (SAS, SARL, SA) | ✅ | |
 | F53 | Ratios sectoriels (commerce/services/industrie) | ✅ | RATIOS_SECTORIELS |
+| F54 | Dates de début/fin d'exercice paramétrables | 🔴 | Exercices décalés (ex: 01/04 → 31/03) |
+| F55 | SIRET/SIREN fictifs générés (Luhn) | 🔴 | |
+| F56 | Encart TVA pédagogique | 🟡 | |
+| F57 | Détail des frais de déplacement (625) | 🟡 | |
 
 ## Évolutions futures (backlog)
 
 | # | Fonctionnalité | Statut | Notes |
 |---|---------------|--------|-------|
-| F60 | SIG — Soldes Intermédiaires de Gestion | 🟡 | resultat.js prêt à accueillir |
+| F60 | SIG — Soldes Intermédiaires de Gestion | 🟡 | resultat.js prêt |
 | F61 | CAF — Capacité d'Autofinancement | 🟡 | idem |
 | F62 | Ratios de rentabilité | 🟡 | calculables depuis BilanData |
 | F63 | Tableau de financement | 🔴 | Niveau DSCG |
 | F64 | Mode élève / formateur | 🔴 | Droits d'édition différenciés |
 | F65 | SCI / EI — formes juridiques supplémentaires | 🔴 | |
-| F66 | Export Excel / CSV | 🔴 | |

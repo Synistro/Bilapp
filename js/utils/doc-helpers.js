@@ -105,6 +105,7 @@ export function buildTabs(active, output) {
   if (output.bilan)          tabs.push({ id: 'bilan',    label: 'Bilan' });
   if (output.compteResultat) tabs.push({ id: 'resultat', label: 'Compte de résultat' });
   if (output.annexe)         tabs.push({ id: 'annexe',   label: 'Annexe' });
+  if (output.liasseFiscale)  tabs.push({ id: 'liasse',   label: 'Liasse fiscale' });
 
   return `
     <div class="doc-tabs" role="tablist">

@@ -12,12 +12,15 @@
  */
 
 'use strict';
-
+import { buildLiasse }                           from './liasse.js';
 import { fmt, zeroCls, buildHeader, buildTabs } from '../utils/doc-helpers.js';
 import { buildResultat }                         from './resultat.js';
+import { buildAnnexe }                           from './annexe.js';
 import { setOverride, isLocked, getOverrides, clearOverrides, countOverrides } from '../core/overrides.js';
 import { reconcile }                             from '../core/reconcile.js';
 import { exportDocument }                        from '../export/pdf.js';
+import { saveSession, loadSession }              from '../export/session.js';
+import { generate }                              from '../core/engine.js';
 
 // ============================================================
 // ÉTAT DU MODULE
@@ -345,6 +348,73 @@ function updateLockCount() {
 }
 
 // ============================================================
+// BINDING BOUTONS SESSION (save / load)
+// ============================================================
+
+/**
+ * Attache les handlers des boutons 💾 et 📂 après chaque render.
+ * L'input file caché est déclenché par le bouton 📂.
+ */
+function bindSessionButtons() {
+  const btnSave   = document.getElementById('btnSaveSession');
+  const btnLoad   = document.getElementById('btnLoadSession');
+  const inputFile = document.getElementById('inputLoadSession');
+
+  if (btnSave) {
+    btnSave.addEventListener('click', () => {
+      saveSession(_currentData, _currentParams, getOverrides());
+    });
+  }
+
+  if (btnLoad && inputFile) {
+    btnLoad.addEventListener('click', () => inputFile.click());
+
+    inputFile.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      // Réinitialise l'input pour permettre le rechargement du même fichier
+      inputFile.value = '';
+
+      try {
+        const payload = await loadSession(file);
+
+        // Restaure les overrides depuis le tableau de paires
+        clearOverrides();
+        for (const [path, val] of payload.overrides) {
+          setOverride(path, val);
+        }
+
+        // Restaure l'état applicatif
+        _currentData   = payload.data;
+        _currentParams = payload.params;
+
+        // Re-render sur l'onglet par défaut du payload
+        const defaultTab = payload.params.output?.bilan ? 'bilan'
+          : payload.params.output?.compteResultat ? 'resultat'
+          : 'annexe';
+        renderTab(defaultTab, 0);
+
+      } catch (err) {
+        console.error(err.message);
+        alert(`Impossible de charger la session :\n${err.message}`);
+      }
+    });
+  }
+}
+
+function bindRegenerer() {
+  const btn = document.getElementById('btnRegenerer');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const freshData = generate(_currentParams);
+    const { data, desequilibre } = reconcile(freshData, getOverrides(), _currentParams);
+    _currentData = data;
+    renderTab(_currentTab, desequilibre);
+  });
+}
+
+// ============================================================
 // RENDER TAB
 // ============================================================
 
@@ -352,8 +422,7 @@ function renderTab(tab, desequilibre = 0) {
   _currentTab = tab;
   const app   = document.getElementById('app');
 
-  const titres = { bilan: 'Bilan comptable', resultat: 'Compte de résultat', annexe: 'Annexe comptable' };
-
+  const titres = { bilan: 'Bilan comptable', resultat: 'Compte de résultat', annexe: 'Annexe comptable', liasse: 'Liasse fiscale' };
   let content = '';
   if (tab === 'bilan') {
     content = `
@@ -365,6 +434,10 @@ function renderTab(tab, desequilibre = 0) {
     `;
   } else if (tab === 'resultat') {
     content = buildResultat(_currentData.resultat, _currentData.n1);
+  } else if (tab === 'annexe') {
+    content = buildAnnexe(_currentData, _currentParams);
+  } else if (tab === 'liasse') {
+    content = buildLiasse(_currentData, _currentParams);
   }
 
   app.innerHTML = `
@@ -379,11 +452,15 @@ function renderTab(tab, desequilibre = 0) {
       <div class="doc-actions">
         <div class="doc-actions__left">
           <button class="btn btn--secondary btn--sm" id="btnRetour">← Nouveau bilan</button>
+          <button class="btn btn--secondary btn--sm" id="btnRegenerer">🔄 Régénérer</button>
         </div>
         <div class="doc-actions__right">
           <span class="lock-count" id="lockCount" style="display:none">
             🔒 <span class="lock-count__badge">0</span> verrouillé(s)
           </span>
+          <button class="btn btn--ghost btn--sm" id="btnSaveSession" title="Sauvegarder la session">💾 Sauvegarder</button>
+          <button class="btn btn--ghost btn--sm" id="btnLoadSession" title="Charger une session">📂 Charger</button>
+          <input type="file" id="inputLoadSession" accept=".json" style="display:none" aria-hidden="true">
           <button class="btn btn--ghost btn--sm" id="btnPrint">⎙ Imprimer</button>
         </div>
       </div>
@@ -394,7 +471,9 @@ function renderTab(tab, desequilibre = 0) {
 
   updateLockCount();
   bindEdition();
-
+  bindSessionButtons();
+  bindRegenerer();
+  
   app.querySelectorAll('.doc-tab').forEach(btn => {
     btn.addEventListener('click', () => renderTab(btn.dataset.tab, desequilibre));
   });
@@ -421,5 +500,10 @@ export function renderDocuments(data, params) {
   clearOverrides();
   _currentData   = data;
   _currentParams = params;
-  renderTab(params.output.bilan ? 'bilan' : 'resultat', 0);
+  renderTab(
+    params.output.bilan          ? 'bilan'    :
+    params.output.compteResultat ? 'resultat' :
+    params.output.annexe         ? 'annexe'   : 'liasse',
+    0
+  );
 }
