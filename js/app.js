@@ -9,7 +9,7 @@
  *   - Recevoir BilanParams à la soumission
  *   - Appeler engine.js → BilanData
  *   - Appeler validator.js → vérification cohérence
- *   - Dispatcher le rendu vers les bons modules (P4+)
+ *   - Dispatcher le rendu vers les bons modules
  *
  * État applicatif global (seul fichier autorisé à en avoir) :
  *   _bilanParams  — paramètres saisis dans le formulaire
@@ -18,9 +18,10 @@
 
 'use strict';
 
-import { initForm } from './modules/form.js';
-import { generate } from './core/engine.js';
-import { validate } from './core/validator.js';
+import { initForm }        from './modules/form.js';
+import { generate }        from './core/engine.js';
+import { validate }        from './core/validator.js';
+import { renderDocuments } from './modules/bilan.js';
 
 // ============================================================
 // ÉTAT APPLICATIF
@@ -61,63 +62,8 @@ function onFormSubmit(bilanParams) {
     console.warn('[Bilapp] Violations de validation :', errors);
   }
 
-  // TODO — P4 : appeler les renderers selon output choisi
-  _renderDebug(_bilanData);
-}
-
-// ============================================================
-// DEBUG (temporaire — sera remplacé par les renderers P4+)
-// ============================================================
-
-/**
- * Affiche un récapitulatif JSON du BilanData généré pour debug.
- * @param {object} data  BilanData
- */
-function _renderDebug(data) {
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <header class="app-header">
-      <div class="container">
-        <div class="app-header__logo">Bil<span>app</span></div>
-        <div class="app-header__subtitle">Générateur de bilans comptables pédagogiques</div>
-      </div>
-    </header>
-
-    <div class="form-wrapper">
-      <div class="form-panel" style="max-width: 780px;">
-        <div class="form-panel__body">
-          <div class="step-header">
-            <div class="step-header__eyebrow">Phase P2 — engine.js ✓</div>
-            <h2 class="step-header__title">BilanData généré</h2>
-            <p class="step-header__desc">
-              Actif net : <strong>${data.bilan.actif.totalNet.toLocaleString('fr-FR')} €</strong>
-              &nbsp;|&nbsp;
-              Passif total : <strong>${data.bilan.passif.total.toLocaleString('fr-FR')} €</strong>
-              &nbsp;|&nbsp;
-              Résultat net : <strong>${data.resultat.resultatNet.toLocaleString('fr-FR')} €</strong>
-            </p>
-          </div>
-          <pre style="
-            background: #f4f5f7;
-            border: 1px solid #d0d5dd;
-            border-radius: 8px;
-            padding: 1.5rem;
-            font-size: 0.75rem;
-            overflow-x: auto;
-            line-height: 1.6;
-            max-height: 60vh;
-          ">${JSON.stringify(data, null, 2)}</pre>
-          <div style="margin-top: 1.5rem;">
-            <button class="btn btn--secondary" id="btnBack">← Modifier les paramètres</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('btnBack')?.addEventListener('click', () => {
-    init();
-  });
+  // Rendu des documents
+  renderDocuments(_bilanData, _bilanParams);
 }
 
 // ============================================================
