@@ -1,6 +1,252 @@
 /* print.css — Bilapp
+ * -------------------------------------------------------
  * Styles d'impression / export PDF.
  * Appliqués uniquement via @media print.
+ *
+ * Stratégie :
+ * - Masque tout l'UI (header, onglets, actions, bandeau fictif fixe)
+ * - N'imprime que #print-target injecté par pdf.js
+ * - Force les couleurs pour l'impression (backgrounds, textes)
+ * - Gère les sauts de page entre sections
+ * - Injecte mention fictif en pied de page
  */
 
-/* TODO — Phase P6 */
+@media print {
+
+  /* ============================================================
+     RESET IMPRESSION
+     ============================================================ */
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html,
+  body {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+    font-size: 10pt;
+    font-family: 'Georgia', serif;
+    color: #000 !important;
+  }
+
+  /* ============================================================
+     MASQUER TOUT L'UI
+     ============================================================ */
+
+  #mentionFictif          { display: none !important; }
+
+  .app-header,
+  .doc-tabs,
+  .doc-actions,
+  .progress-bar,
+  .form-wrapper,
+  .desequilibre-banner,
+  .lock-count             { display: none !important; }
+
+  #app                    { display: none !important; }
+
+  /* ============================================================
+     ZONE D'IMPRESSION
+     ============================================================ */
+
+  #print-target {
+    display: block !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ============================================================
+     MISE EN PAGE
+     ============================================================ */
+
+  @page {
+    size: A4 portrait;
+    margin: 15mm 15mm 20mm 15mm;
+  }
+
+  @page {
+    @bottom-center {
+      content: "DOCUMENT FICTIF — À DES FINS PÉDAGOGIQUES UNIQUEMENT — Généré par Bilapp";
+      font-size: 7pt;
+      color: #7d4e0a;
+      font-family: 'Georgia', serif;
+    }
+  }
+
+  /* ============================================================
+     EN-TÊTE DOCUMENT
+     ============================================================ */
+
+  .doc-header {
+    background-color: #1a2c4e !important;
+    color: #fff !important;
+    padding: 12pt !important;
+    margin-bottom: 12pt !important;
+    border-radius: 0 !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .doc-header__societe    { color: #fff !important; font-size: 16pt !important; }
+  .doc-header__logo       { color: rgba(255,255,255,0.7) !important; }
+  .doc-header__meta-item  { color: rgba(255,255,255,0.8) !important; }
+  .doc-header__title      { color: #fff !important; }
+  .doc-header__exercice   { color: rgba(255,255,255,0.8) !important; }
+
+  .doc-header__mention {
+    background-color: #fff3cd !important;
+    color: #7d4e0a !important;
+    border: 1pt solid #f0c040 !important;
+    font-size: 7pt !important;
+    padding: 2pt 6pt !important;
+  }
+
+  /* ============================================================
+     TABLEAUX COMPTABLES
+     ============================================================ */
+
+  .doc-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8pt !important;
+    border: 0.5pt solid #d0d5dd !important;
+    page-break-inside: auto;
+  }
+
+  /* Répète l'en-tête sur chaque page */
+  .doc-table thead {
+    display: table-header-group;
+  }
+
+  .doc-table thead th {
+    background-color: #f4f5f7 !important;
+    color: #4a5568 !important;
+    font-size: 7pt !important;
+    padding: 4pt 6pt !important;
+    border-bottom: 0.5pt solid #d0d5dd !important;
+  }
+
+  .doc-table td {
+    padding: 3pt 6pt !important;
+    border-bottom: 0.5pt solid #e8eaed !important;
+    font-size: 8pt !important;
+  }
+
+  .doc-table tr.row--section td {
+    background-color: #1a2c4e !important;
+    color: #fff !important;
+    font-size: 7pt !important;
+    padding: 3pt 6pt !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .doc-table tr.row--subsection td {
+    background-color: #eef1f6 !important;
+    color: #1a2c4e !important;
+    font-size: 7pt !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .doc-table tr.row--subtotal td {
+    background-color: #f8f9fb !important;
+    font-weight: bold !important;
+    border-top: 0.5pt solid #d0d5dd !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .doc-table tr.row--total td {
+    background-color: #e8ecf4 !important;
+    color: #1a2c4e !important;
+    font-weight: bold !important;
+    font-size: 9pt !important;
+    border-top: 1pt solid #1a2c4e !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .doc-table tr.row--resultat-net td {
+    background-color: #1a2c4e !important;
+    color: #fff !important;
+    font-weight: bold !important;
+    font-size: 9pt !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .doc-table td.is-positive { color: #1a7a4a !important; }
+  .doc-table td.is-negative { color: #c0392b !important; }
+  .doc-table td.is-zero     { color: #718096 !important; }
+
+  /* Masquer les indicateurs d'édition */
+  .doc-table td.is-locked::after                { display: none !important; }
+  .doc-table tr.has-lock td:first-child::before { display: none !important; }
+
+  /* ============================================================
+     LAYOUT BILAN
+     Converti en empilement vertical pour A4
+     ============================================================ */
+
+  .bilan-layout {
+    display: block !important;
+  }
+
+  /* Saut de page entre actif et passif */
+  .bilan-layout .doc-section:first-child {
+    page-break-after: always;
+    break-after: always;
+  }
+
+  /* ============================================================
+     SECTIONS
+     ============================================================ */
+
+  .doc-section {
+    margin-bottom: 8pt !important;
+    page-break-inside: auto;
+  }
+
+  .doc-section__title {
+    font-size: 7pt !important;
+    margin-bottom: 4pt !important;
+    padding-bottom: 2pt !important;
+    color: #718096 !important;
+    border-bottom: 0.5pt solid #e8eaed !important;
+  }
+
+  /* Classe utilitaire pour forcer un saut entre documents */
+  .print-page-break {
+    page-break-before: always;
+    break-before: always;
+  }
+
+  /* ============================================================
+     PIED DE PAGE MENTION FICTIF (fallback si @page non supporté)
+     ============================================================ */
+
+  .print-footer {
+    display: block !important;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 7pt;
+    color: #7d4e0a;
+    padding: 4pt 0;
+    border-top: 0.5pt solid #f0c040;
+    background: #fff3cd !important;
+  }
+
+}

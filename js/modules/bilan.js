@@ -17,16 +17,14 @@ import { fmt, zeroCls, buildHeader, buildTabs } from '../utils/doc-helpers.js';
 import { buildResultat }                         from './resultat.js';
 import { setOverride, removeOverride, isLocked, getOverrides, clearOverrides, countOverrides } from '../core/overrides.js';
 import { reconcile }                             from '../core/reconcile.js';
+import { exportDocument }                        from '../export/pdf.js';
 
 // ============================================================
 // ÉTAT DU MODULE
 // ============================================================
 
-/** Référence au BilanData courant (post-réconciliation) */
 let _currentData   = null;
-/** Référence aux BilanParams d'origine */
 let _currentParams = null;
-/** Onglet actif */
 let _currentTab    = 'bilan';
 
 // ============================================================
@@ -35,9 +33,8 @@ let _currentTab    = 'bilan';
 
 /**
  * Parse une saisie utilisateur en entier €.
- * Accepte "1 234 €", "1234", "1234,56" → 1235
  * @param {string} str
- * @returns {number|null}  null si invalide
+ * @returns {number|null}
  */
 function parseInput(str) {
   const clean = str.replace(/\s/g, '').replace('€', '').replace(',', '.').trim();
@@ -47,21 +44,18 @@ function parseInput(str) {
 
 /**
  * Active l'édition inline sur une cellule.
- * Remplace le texte par un <input>, confirme sur Enter/blur.
- *
- * @param {HTMLElement} td       Cellule cible
- * @param {string}      path     Chemin dot-notation du poste
- * @param {number}      valeur   Valeur actuelle
- * @param {Function}    onCommit Callback(path, newValeur) appelé à la confirmation
+ * @param {HTMLElement} td
+ * @param {string}      path
+ * @param {number}      valeur
+ * @param {Function}    onCommit
  */
 function activerEdition(td, path, valeur, onCommit) {
-  if (td.querySelector('.cell-input')) return; // déjà en cours
+  if (td.querySelector('.cell-input')) return;
 
   const original = td.textContent.trim();
   const input = document.createElement('input');
   input.type      = 'text';
   input.className = 'cell-input';
-  // Pré-remplir avec le nombre brut (sans formatage) pour faciliter la saisie
   input.value     = valeur === 0 ? '' : String(valeur);
   input.setAttribute('aria-label', `Modifier ${path}`);
 
@@ -75,7 +69,6 @@ function activerEdition(td, path, valeur, onCommit) {
     if (parsed !== null && parsed !== valeur) {
       onCommit(path, parsed);
     } else {
-      // Annulation : restaure l'affichage sans modifier
       td.textContent = original;
     }
   }
@@ -93,8 +86,7 @@ function activerEdition(td, path, valeur, onCommit) {
 // ============================================================
 
 /**
- * Construit le HTML du bandeau déséquilibre.
- * @param {number} ecart  Écart résiduel actif - passif
+ * @param {number} ecart
  * @returns {string}
  */
 function buildDesequilibreBanner(ecart) {
@@ -118,12 +110,10 @@ function buildDesequilibreBanner(ecart) {
 // ============================================================
 
 /**
- * Ligne de poste actif avec support édition inline.
- * Les colonnes brut et amort sont éditables ; net est calculé.
- *
+ * Ligne de poste actif avec édition inline sur brut et amort.
  * @param {string}      libelle
- * @param {object}      p           { brut, amort, net }
- * @param {string}      basePath    Chemin dot-notation du poste (sans .brut/.amort/.net)
+ * @param {object}      p        { brut, amort, net }
+ * @param {string}      basePath Chemin dot-notation sans .brut/.amort/.net
  * @param {number|null} n1Net
  * @param {boolean}     indent
  * @returns {string}
@@ -135,8 +125,7 @@ function rowActif(libelle, p, basePath, n1Net = null, indent = true) {
 
   const lockedBrut  = isLocked(brutPath);
   const lockedAmort = isLocked(amortPath);
-  const lockedNet   = isLocked(netPath);
-  const hasLock     = lockedBrut || lockedAmort || lockedNet;
+  const hasLock     = lockedBrut || lockedAmort || isLocked(netPath);
 
   const n1Cell = n1Net !== null
     ? `<td class="col--n1 ${zeroCls(n1Net)}">${fmt(n1Net)}</td>`
@@ -149,20 +138,14 @@ function rowActif(libelle, p, basePath, n1Net = null, indent = true) {
           data-path="${brutPath}" data-value="${p.brut}">${fmt(p.brut)}</td>
       <td class="is-editable ${lockedAmort ? 'is-locked' : ''} ${zeroCls(p.amort)}"
           data-path="${amortPath}" data-value="${p.amort}">${fmt(p.amort)}</td>
-      <td class="${zeroCls(p.net)}"
-          data-path="${netPath}">${fmt(p.net)}</td>
+      <td class="${zeroCls(p.net)}" data-path="${netPath}">${fmt(p.net)}</td>
       ${n1Cell}
     </tr>
   `;
 }
 
-/**
- * Ligne de sous-total actif (non éditable, recalculée).
- */
 function rowActifSubtotal(libelle, p, n1Net = null) {
-  const n1Cell = n1Net !== null
-    ? `<td class="col--n1">${fmt(n1Net)}</td>`
-    : '';
+  const n1Cell = n1Net !== null ? `<td class="col--n1">${fmt(n1Net)}</td>` : '';
   return `
     <tr class="row--subtotal">
       <td>${libelle}</td>
@@ -178,17 +161,19 @@ function rowActifSubtotal(libelle, p, n1Net = null) {
 // ACTIF — TABLEAU COMPLET
 // ============================================================
 
+/**
+ * @param {object}      bilan
+ * @param {object|null} n1
+ * @returns {string}
+ */
 function buildActif(bilan, n1) {
   const a     = bilan.actif;
   const an1   = n1?.bilan?.actif ?? null;
   const hasN1 = an1 !== null;
   const cols  = hasN1 ? 5 : 4;
-
-  const thN1 = hasN1 ? `<th class="col-width--n1">N-1 Net</th>` : '';
-  const n1v  = (fn) => hasN1 ? fn(an1) : null;
-
-  // Chemin de base pour chaque poste
-  const b = 'bilan.actif';
+  const thN1  = hasN1 ? `<th class="col-width--n1">N-1 Net</th>` : '';
+  const n1v   = (fn) => hasN1 ? fn(an1) : null;
+  const b     = 'bilan.actif';
 
   return `
     <div class="doc-section">
@@ -202,18 +187,10 @@ function buildActif(bilan, n1) {
           ${hasN1 ? '<col class="col-width--n1" />' : ''}
         </colgroup>
         <thead>
-          <tr>
-            <th></th>
-            <th>Brut</th>
-            <th>Amort / Dép.</th>
-            <th>Net</th>
-            ${thN1}
-          </tr>
+          <tr><th></th><th>Brut</th><th>Amort / Dép.</th><th>Net</th>${thN1}</tr>
         </thead>
         <tbody>
-
           <tr class="row--section"><td colspan="${cols}">Actif immobilisé</td></tr>
-
           <tr class="row--subsection"><td colspan="${cols}">Immobilisations incorporelles</td></tr>
           ${rowActif('Frais d\'établissement',     a.immobilise.incorporel.fraisEtablissement, `${b}.immobilise.incorporel.fraisEtablissement`, n1v(x => x.immobilise.incorporel.fraisEtablissement.net))}
           ${rowActif('Frais de R&D',               a.immobilise.incorporel.fraisRD,            `${b}.immobilise.incorporel.fraisRD`,            n1v(x => x.immobilise.incorporel.fraisRD.net))}
@@ -233,11 +210,9 @@ function buildActif(bilan, n1) {
           ${rowActif('Participations',           a.immobilise.financier.participations, `${b}.immobilise.financier.participations`, n1v(x => x.immobilise.financier.participations.net))}
           ${rowActif('Autres immos financières', a.immobilise.financier.autresFinancier,`${b}.immobilise.financier.autresFinancier`,n1v(x => x.immobilise.financier.autresFinancier.net))}
           ${rowActifSubtotal('Total financier',  a.immobilise.financier.total,          n1v(x => x.immobilise.financier.total.net))}
-
-          ${rowActifSubtotal('TOTAL ACTIF IMMOBILISÉ', a.immobilise.total, n1v(x => x.immobilise.total.net))}
+          ${rowActifSubtotal('TOTAL ACTIF IMMOBILISÉ', a.immobilise.total,              n1v(x => x.immobilise.total.net))}
 
           <tr class="row--section"><td colspan="${cols}">Actif circulant</td></tr>
-
           <tr class="row--subsection"><td colspan="${cols}">Stocks et en-cours</td></tr>
           ${rowActif('Matières premières',     a.circulant.stocks.matieresPremières, `${b}.circulant.stocks.matieresPremières`, n1v(x => x.circulant.stocks.matieresPremières.net))}
           ${rowActif('En-cours de production', a.circulant.stocks.enCours,           `${b}.circulant.stocks.enCours`,           n1v(x => x.circulant.stocks.enCours.net))}
@@ -254,20 +229,16 @@ function buildActif(bilan, n1) {
           ${rowActif('Valeurs mobilières de placement', a.circulant.disponibilites.vmp,          `${b}.circulant.disponibilites.vmp`,          n1v(x => x.circulant.disponibilites.vmp.net))}
           ${rowActif('Banques, caisses',                a.circulant.disponibilites.banqueCaisse, `${b}.circulant.disponibilites.banqueCaisse`, n1v(x => x.circulant.disponibilites.banqueCaisse.net))}
           ${rowActifSubtotal('Total disponibilités',    a.circulant.disponibilites.total,        n1v(x => x.circulant.disponibilites.total.net))}
-
-          ${rowActifSubtotal('TOTAL ACTIF CIRCULANT', a.circulant.total, n1v(x => x.circulant.total.net))}
+          ${rowActifSubtotal('TOTAL ACTIF CIRCULANT',   a.circulant.total,                       n1v(x => x.circulant.total.net))}
 
           <tr class="row--section"><td colspan="${cols}">Comptes de régularisation</td></tr>
           ${rowActif('Charges constatées d\'avance', a.regularisation.chargesConstatees, `${b}.regularisation.chargesConstatees`, n1v(x => x.regularisation.chargesConstatees.net), false)}
 
           <tr class="row--total">
-            <td>TOTAL ACTIF</td>
-            <td></td>
-            <td></td>
+            <td>TOTAL ACTIF</td><td></td><td></td>
             <td>${fmt(a.totalNet)}</td>
             ${hasN1 ? `<td class="col--n1">${fmt(an1.totalNet)}</td>` : ''}
           </tr>
-
         </tbody>
       </table>
     </div>
@@ -279,19 +250,16 @@ function buildActif(bilan, n1) {
 // ============================================================
 
 /**
- * Ligne de poste passif avec support édition inline.
  * @param {string}      libelle
  * @param {number}      montant
- * @param {string}      path     Chemin dot-notation complet du poste
+ * @param {string}      path
  * @param {number|null} n1
  * @param {boolean}     indent
  * @returns {string}
  */
 function rowPassif(libelle, montant, path, n1 = null, indent = true) {
   const locked = isLocked(path);
-  const n1Cell = n1 !== null
-    ? `<td class="col--n1 ${zeroCls(n1)}">${fmt(n1)}</td>`
-    : '';
+  const n1Cell = n1 !== null ? `<td class="col--n1 ${zeroCls(n1)}">${fmt(n1)}</td>` : '';
   return `
     <tr class="${locked ? 'has-lock' : ''}">
       <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}</td>
@@ -306,9 +274,7 @@ function rowPassifSubtotal(libelle, montant, n1 = null) {
   const n1Cell = n1 !== null ? `<td class="col--n1">${fmt(n1)}</td>` : '';
   return `
     <tr class="row--subtotal">
-      <td>${libelle}</td>
-      <td>${fmt(montant)}</td>
-      ${n1Cell}
+      <td>${libelle}</td><td>${fmt(montant)}</td>${n1Cell}
     </tr>
   `;
 }
@@ -317,16 +283,19 @@ function rowPassifSubtotal(libelle, montant, n1 = null) {
 // PASSIF — TABLEAU COMPLET
 // ============================================================
 
+/**
+ * @param {object}      bilan
+ * @param {object|null} n1
+ * @returns {string}
+ */
 function buildPassif(bilan, n1) {
   const p     = bilan.passif;
   const pn1   = n1?.bilan?.passif ?? null;
   const hasN1 = pn1 !== null;
   const cols  = hasN1 ? 3 : 2;
-
-  const thN1 = hasN1 ? `<th class="col-width--n1">N-1</th>` : '';
-  const n1v  = (fn) => hasN1 ? fn(pn1) : null;
-
-  const b = 'bilan.passif';
+  const thN1  = hasN1 ? `<th class="col-width--n1">N-1</th>` : '';
+  const n1v   = (fn) => hasN1 ? fn(pn1) : null;
+  const b     = 'bilan.passif';
 
   return `
     <div class="doc-section">
@@ -338,14 +307,9 @@ function buildPassif(bilan, n1) {
           ${hasN1 ? '<col style="width:20%" />' : ''}
         </colgroup>
         <thead>
-          <tr>
-            <th></th>
-            <th>Montant</th>
-            ${thN1}
-          </tr>
+          <tr><th></th><th>Montant</th>${thN1}</tr>
         </thead>
         <tbody>
-
           <tr class="row--section"><td colspan="${cols}">Capitaux propres</td></tr>
           ${rowPassif('Capital social',          p.capitauxPropres.capital,        `${b}.capitauxPropres.capital`,        n1v(x => x.capitauxPropres.capital))}
           ${rowPassif('Primes d\'émission',      p.capitauxPropres.primesEmission, `${b}.capitauxPropres.primesEmission`, n1v(x => x.capitauxPropres.primesEmission))}
@@ -375,7 +339,6 @@ function buildPassif(bilan, n1) {
             <td>${fmt(p.total)}</td>
             ${hasN1 ? `<td class="col--n1">${fmt(pn1.total)}</td>` : ''}
           </tr>
-
         </tbody>
       </table>
     </div>
@@ -386,11 +349,6 @@ function buildPassif(bilan, n1) {
 // BINDING ÉDITION INLINE
 // ============================================================
 
-/**
- * Attache les listeners de clic sur toutes les cellules éditables
- * du conteneur #docContent.
- * Au commit d'une valeur : enregistre l'override et re-render.
- */
 function bindEdition() {
   document.querySelectorAll('#docContent td.is-editable').forEach(td => {
     td.addEventListener('click', () => {
@@ -408,12 +366,9 @@ function bindEdition() {
 }
 
 // ============================================================
-// BARRE D'ACTIONS — COMPTEUR VERROUS
+// BARRE D'ACTIONS
 // ============================================================
 
-/**
- * Met à jour le compteur de postes verrouillés dans la barre d'actions.
- */
 function updateLockCount() {
   const el = document.getElementById('lockCount');
   if (!el) return;
@@ -428,9 +383,8 @@ function updateLockCount() {
 // ============================================================
 
 /**
- * Render un onglet dans #app.
- * @param {string} tab          'bilan' | 'resultat'
- * @param {number} desequilibre Écart résiduel actif/passif (0 = OK)
+ * @param {string} tab
+ * @param {number} desequilibre
  */
 function renderTab(tab, desequilibre = 0) {
   _currentTab = tab;
@@ -454,6 +408,7 @@ function renderTab(tab, desequilibre = 0) {
   } else if (tab === 'resultat') {
     content = buildResultat(_currentData.resultat, _currentData.n1);
   }
+  // tab === 'annexe' → P7
 
   app.innerHTML = `
     <header class="app-header">
@@ -492,8 +447,9 @@ function renderTab(tab, desequilibre = 0) {
     window.location.reload();
   });
 
+  // Câblé sur exportDocument() — prépare le DOM avant window.print()
   app.querySelector('#btnPrint')?.addEventListener('click', () => {
-    window.print();
+    exportDocument('#docContent');
   });
 }
 
@@ -503,8 +459,6 @@ function renderTab(tab, desequilibre = 0) {
 
 /**
  * Initialise et affiche les documents.
- * Réinitialise les overrides pour un nouveau bilan.
- *
  * @param {object} data    BilanData complet
  * @param {object} params  BilanParams
  */
