@@ -1,8 +1,391 @@
 /* main.css — Bilapp
  * -------------------------------------------------------
- * Styles globaux et variables CSS.
- * Toutes les couleurs, typographies et espacements
- * sont définis ici en variables et réutilisés partout.
+ * Styles globaux et design system.
+ * Variables CSS centralisées — ne jamais écrire de valeur
+ * en dur dans les autres fichiers CSS.
+ *
+ * Table des matières :
+ *   1. Variables CSS (design tokens)
+ *   2. Reset & base
+ *   3. Typographie
+ *   4. Layout global
+ *   5. Composants partagés (boutons, badges, alerts)
+ *   6. Bandeau mention fictif
+ *   7. Utilitaires
  */
 
-/* TODO — Phase P1 : définir les variables et styles globaux */
+/* ============================================================
+   1. VARIABLES CSS — DESIGN TOKENS
+   ============================================================ */
+
+:root {
+  /* Couleurs principales */
+  --color-navy:        #1a2c4e;   /* Bleu marine institutionnel */
+  --color-navy-light:  #243d6b;
+  --color-navy-dark:   #0f1c31;
+  --color-accent:      #2e5fa3;   /* Bleu accent */
+  --color-accent-hover:#1e4585;
+
+  /* Couleurs neutres */
+  --color-white:       #ffffff;
+  --color-bg:          #f4f5f7;   /* Fond général */
+  --color-surface:     #ffffff;   /* Fond des cartes/panneaux */
+  --color-border:      #d0d5dd;
+  --color-border-light:#e8eaed;
+
+  /* Texte */
+  --color-text-primary:   #1a2c4e;
+  --color-text-secondary: #4a5568;
+  --color-text-muted:     #718096;
+  --color-text-inverse:   #ffffff;
+
+  /* États */
+  --color-success:     #1a7a4a;
+  --color-success-bg:  #e8f5ee;
+  --color-error:       #c0392b;
+  --color-error-bg:    #fdecea;
+  --color-warning:     #b7791f;
+  --color-warning-bg:  #fef9e7;
+
+  /* Mention fictif — bande d'alerte */
+  --color-fictif-bg:   #fff3cd;
+  --color-fictif-text: #7d4e0a;
+  --color-fictif-border:#f0c040;
+
+  /* Typographie */
+  --font-ui:      'DM Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-doc:     'Playfair Display', 'Georgia', serif;
+  --font-mono:    'JetBrains Mono', 'Consolas', monospace;
+
+  --text-xs:   0.75rem;    /*  12px */
+  --text-sm:   0.875rem;   /*  14px */
+  --text-base: 1rem;       /*  16px */
+  --text-lg:   1.125rem;   /*  18px */
+  --text-xl:   1.25rem;    /*  20px */
+  --text-2xl:  1.5rem;     /*  24px */
+  --text-3xl:  1.875rem;   /*  30px */
+
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  --leading-tight:  1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed:1.75;
+
+  /* Espacements */
+  --space-1:  0.25rem;   /*  4px */
+  --space-2:  0.5rem;    /*  8px */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-5:  1.25rem;   /* 20px */
+  --space-6:  1.5rem;    /* 24px */
+  --space-8:  2rem;      /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+
+  /* Bordures */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-full:9999px;
+
+  /* Ombres */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg:  0 10px 30px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+  --shadow-xl:  0 20px 50px rgba(0,0,0,0.15);
+
+  /* Transitions */
+  --transition-fast:   150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow:   400ms ease;
+
+  /* Layout */
+  --max-width-form:  680px;
+  --max-width-doc:   960px;
+  --max-width-wide: 1200px;
+}
+
+/* ============================================================
+   2. RESET & BASE
+   ============================================================ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  font-weight: var(--weight-normal);
+  line-height: var(--leading-normal);
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+  min-height: 100vh;
+  /* Espace pour le bandeau mention fictif en haut */
+  padding-top: 40px;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+input, button, select, textarea {
+  font: inherit;
+}
+
+/* ============================================================
+   3. TYPOGRAPHIE
+   ============================================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+  color: var(--color-text-primary);
+}
+
+h1 { font-size: var(--text-3xl); }
+h2 { font-size: var(--text-2xl); }
+h3 { font-size: var(--text-xl);  }
+h4 { font-size: var(--text-lg);  }
+
+p {
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--color-accent-hover);
+  text-decoration: underline;
+}
+
+/* ============================================================
+   4. LAYOUT GLOBAL
+   ============================================================ */
+
+#app {
+  min-height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  width: 100%;
+  max-width: var(--max-width-wide);
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
+.container--form {
+  max-width: var(--max-width-form);
+}
+
+.container--doc {
+  max-width: var(--max-width-doc);
+}
+
+/* ============================================================
+   5. COMPOSANTS PARTAGÉS
+   ============================================================ */
+
+/* --- Boutons --- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Bouton primaire */
+.btn--primary {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.btn--primary:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* Bouton secondaire */
+.btn--secondary {
+  background-color: transparent;
+  border-color: var(--color-border);
+  color: var(--color-text-primary);
+}
+
+.btn--secondary:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Bouton ghost */
+.btn--ghost {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+
+.btn--ghost:hover:not(:disabled) {
+  background-color: var(--color-border-light);
+  color: var(--color-text-primary);
+}
+
+/* Tailles */
+.btn--sm {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-xs);
+}
+
+.btn--lg {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--text-base);
+}
+
+/* --- Badges --- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-full);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.badge--navy {
+  background-color: var(--color-navy);
+  color: var(--color-white);
+}
+
+.badge--success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.badge--error {
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+/* --- Carte / Surface --- */
+
+.card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-8);
+}
+
+/* --- Divider --- */
+
+.divider {
+  height: 1px;
+  background-color: var(--color-border-light);
+  border: none;
+  margin: var(--space-6) 0;
+}
+
+/* ============================================================
+   6. BANDEAU MENTION FICTIF
+   Position fixe en haut de page, toujours visible.
+   ============================================================ */
+
+#mentionFictif {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-fictif-bg);
+  border-bottom: 2px solid var(--color-fictif-border);
+  color: var(--color-fictif-text);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   7. UTILITAIRES
+   ============================================================ */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.text-center  { text-align: center; }
+.text-right   { text-align: right; }
+.text-muted   { color: var(--color-text-muted); }
+.text-error   { color: var(--color-error); }
+.text-success { color: var(--color-success); }
+
+.mt-auto { margin-top: auto; }
+.mb-4    { margin-bottom: var(--space-4); }
+.mb-6    { margin-bottom: var(--space-6); }
+.mb-8    { margin-bottom: var(--space-8); }
+
+.hidden  { display: none !important; }

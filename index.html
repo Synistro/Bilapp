@@ -6,6 +6,11 @@
   <title>Bilapp — Générateur de bilans comptables pédagogiques</title>
   <meta name="description" content="Outil pédagogique de génération de documents comptables français conformes au PCG. À des fins de formation uniquement." />
 
+  <!-- Google Fonts — DM Sans (UI) + Playfair Display (documents) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+
   <!-- Styles -->
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/form.css" />
@@ -14,17 +19,15 @@
 </head>
 <body>
 
-  <!-- Bandeau mention légale — toujours visible -->
-  <div id="mentionFictif" role="alert" aria-live="polite">
+  <!-- Bandeau mention légale — toujours visible, position fixed -->
+  <div id="mentionFictif" role="alert">
     DOCUMENT FICTIF — À DES FINS PÉDAGOGIQUES UNIQUEMENT
   </div>
 
-  <!-- Conteneur principal -->
-  <main id="app">
-    <!-- Contenu injecté dynamiquement par app.js -->
-  </main>
+  <!-- Conteneur principal — tout est injecté ici par app.js -->
+  <main id="app"></main>
 
-  <!-- Point d'entrée JS — type="module" active les imports ES6 -->
+  <!-- Point d'entrée JS — type="module" active les imports ES6 natifs -->
   <script type="module" src="js/app.js"></script>
 
 </body>
