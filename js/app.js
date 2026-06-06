@@ -7,9 +7,9 @@
  * Responsabilités :
  *   - Initialiser le formulaire
  *   - Recevoir BilanParams à la soumission
- *   - Appeler le moteur de calcul (engine.js) → BilanData
- *   - Appeler le validateur (validator.js)
- *   - Dispatcher le rendu vers les bons modules
+ *   - Appeler engine.js → BilanData
+ *   - Appeler validator.js → vérification cohérence
+ *   - Dispatcher le rendu vers les bons modules (P4+)
  *
  * État applicatif global (seul fichier autorisé à en avoir) :
  *   _bilanParams  — paramètres saisis dans le formulaire
@@ -19,6 +19,8 @@
 'use strict';
 
 import { initForm } from './modules/form.js';
+import { generate } from './core/engine.js';
+import { validate } from './core/validator.js';
 
 // ============================================================
 // ÉTAT APPLICATIF
@@ -45,29 +47,33 @@ function init() {
 
 /**
  * Appelé par form.js quand l'utilisateur clique sur "Générer".
- * @param {Object} bilanParams - Objet BilanParams complet
+ * @param {object} bilanParams  Objet BilanParams complet
  */
 function onFormSubmit(bilanParams) {
   _bilanParams = bilanParams;
 
-  // TODO — Phase P2 : appeler engine.js pour générer BilanData
-  // TODO — Phase P3 : appeler validator.js pour vérifier la cohérence
-  // TODO — Phase P4+ : appeler les renderers selon output choisi
+  // Génération
+  _bilanData = generate(bilanParams);
 
-  // Placeholder temporaire — affiche le récap JSON pour debug
-  _renderDebug(bilanParams);
+  // Validation — erreurs non bloquantes, visibles en console dev
+  const { success, errors } = validate(_bilanData);
+  if (!success) {
+    console.warn('[Bilapp] Violations de validation :', errors);
+  }
+
+  // TODO — P4 : appeler les renderers selon output choisi
+  _renderDebug(_bilanData);
 }
 
 // ============================================================
-// DEBUG (temporaire — sera remplacé par les renderers)
+// DEBUG (temporaire — sera remplacé par les renderers P4+)
 // ============================================================
 
 /**
- * Affiche un récapitulatif JSON des paramètres pour debug.
- * Sera supprimé quand engine.js sera implémenté.
- * @param {Object} params
+ * Affiche un récapitulatif JSON du BilanData généré pour debug.
+ * @param {object} data  BilanData
  */
-function _renderDebug(params) {
+function _renderDebug(data) {
   const app = document.getElementById('app');
   app.innerHTML = `
     <header class="app-header">
@@ -78,22 +84,29 @@ function _renderDebug(params) {
     </header>
 
     <div class="form-wrapper">
-      <div class="form-panel" style="max-width: 680px;">
+      <div class="form-panel" style="max-width: 780px;">
         <div class="form-panel__body">
           <div class="step-header">
-            <div class="step-header__eyebrow">Phase P2 à implémenter</div>
-            <h2 class="step-header__title">Paramètres reçus ✓</h2>
-            <p class="step-header__desc">Le moteur de calcul (engine.js) sera connecté ici. Paramètres collectés :</p>
+            <div class="step-header__eyebrow">Phase P2 — engine.js ✓</div>
+            <h2 class="step-header__title">BilanData généré</h2>
+            <p class="step-header__desc">
+              Actif net : <strong>${data.bilan.actif.totalNet.toLocaleString('fr-FR')} €</strong>
+              &nbsp;|&nbsp;
+              Passif total : <strong>${data.bilan.passif.total.toLocaleString('fr-FR')} €</strong>
+              &nbsp;|&nbsp;
+              Résultat net : <strong>${data.resultat.resultatNet.toLocaleString('fr-FR')} €</strong>
+            </p>
           </div>
           <pre style="
             background: #f4f5f7;
             border: 1px solid #d0d5dd;
             border-radius: 8px;
             padding: 1.5rem;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             overflow-x: auto;
             line-height: 1.6;
-          ">${JSON.stringify(params, null, 2)}</pre>
+            max-height: 60vh;
+          ">${JSON.stringify(data, null, 2)}</pre>
           <div style="margin-top: 1.5rem;">
             <button class="btn btn--secondary" id="btnBack">← Modifier les paramètres</button>
           </div>
@@ -111,5 +124,4 @@ function _renderDebug(params) {
 // DÉMARRAGE
 // ============================================================
 
-// Lance l'app quand le DOM est prêt
 document.addEventListener('DOMContentLoaded', init);
