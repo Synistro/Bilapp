@@ -20,7 +20,7 @@
 | F06 | Watermark / mention FICTIF sur tous les documents | ✅ | Bandeau fixe + en-tête |
 | F07 | Comparatif N-1 | ✅ | engine.js + renderers |
 | F08 | Amortissements clampés (amort ≤ brut) | ✅ | engine.js poste() |
-| F09 | Résultat neutre jamais nul (plancher ±1 000€) | ✅ | engine.js + reconcile.js |
+| F09 | Résultat neutre jamais nul — randomisé dans [-999,-1]∪[1,999] | ✅ | engine.js + reconcile.js |
 
 ## Rendu documents
 
@@ -30,7 +30,7 @@
 | F11 | Rendu compte de résultat HTML | ✅ | resultat.js |
 | F12 | Navigation par onglets entre documents | ✅ | bilan.js — buildTabs |
 | F13 | Rendu annexe (4 sections) | ✅ | annexe.js — lecture seule |
-| F14 | Rendu liasse fiscale Cerfa 2050-2058 | 🟢 | P8 — spécifié, 12 imprimés, codes lignes exacts, option A (HTML fidèle Cerfa) |
+| F14 | Rendu liasse fiscale Cerfa 2050-2059-A | ✅ | liasse.js — 12 imprimés, codes lignes exacts |
 
 ## Édition inline
 
@@ -49,36 +49,37 @@
 | F30 | Recalibrage charges par ratio si CA modifié | ✅ | reconcile.js |
 | F31 | Sync variation stocks bilan → CR (PCG) | ✅ | reconcile.js |
 | F32 | Orientation respectée après édition | ✅ | reconcile.js — dotations |
-| F33 | Bouton "Regénérer" — relance engine sur postes non verrouillés | 🔴 | Garde les overrides, régénère le reste |
+| F33 | Bouton 🔄 Régénérer — relance engine, garde les overrides | ✅ | bilan.js — bindRegenerer() + generate() |
 
-## Export
+## Export / Session
 
 | # | Fonctionnalité | Statut | Notes |
 |---|---------------|--------|-------|
-| F40 | Export PDF via window.print() | ✅ | P6 — pdf.js + print.css |
+| F40 | Export PDF via window.print() | ✅ | pdf.js + print.css |
 | F41 | En-tête navy imprimé avec couleurs | ✅ | print-color-adjust |
 | F42 | Mention fictif en pied de page | ✅ | .print-footer |
 | F43 | Saut de page actif / passif | ✅ | print.css |
-| F44 | Save session → download `.json` | ✅ | P7b — session.js, bouton 💾 |
-| F45 | Load session → upload `.json` → restore | ✅ | P7b — session.js, bouton 📂 |
-| F46 | Export Excel / CSV | 🔴 | Backlog |
+| F44 | Save session → download `.json` | ✅ | session.js, bouton 💾 |
+| F45 | Load session → upload `.json` → restore (vue documents) | ✅ | session.js, bouton 📂 |
+| F46 | Load session depuis la page d'accueil | ✅ | app.js — _bindLoadSessionHome() |
+| F47 | Export Excel / CSV | 🔴 | Backlog |
 
-## Liasse fiscale (P8)
+## Liasse fiscale (P8 — terminée)
 
 | # | Fonctionnalité | Statut | Notes |
 |---|---------------|--------|-------|
-| F70 | Imprimé 2050 — Bilan actif Cerfa | 🟢 | Codes lignes exacts AA–BJ |
-| F71 | Imprimé 2051 — Bilan passif Cerfa | 🟢 | Codes lignes exacts DA–EK |
-| F72 | Imprimé 2052 — CR produits Cerfa | 🟢 | Codes lignes exacts FA–GG |
-| F73 | Imprimé 2053 — CR charges Cerfa | 🟢 | Codes lignes exacts HA–HZ |
-| F74 | Imprimé 2054 — Tableau immobilisations | 🟢 | |
-| F75 | Imprimé 2055 — Tableau amortissements | 🟢 | |
-| F76 | Imprimé 2056 — Tableau provisions | 🟢 | |
-| F77 | Imprimé 2057 — Créances et dettes | 🟢 | |
-| F78 | Imprimé 2058-A — Résultat fiscal | 🟢 | Réintégrations simulées (0.5–2% charges externes) |
-| F79 | Imprimé 2058-B — Déficits reportables | 🟢 | Affiché si résultat négatif |
-| F80 | Imprimé 2058-C — Affectation résultat | 🟢 | |
-| F81 | Imprimé 2059-A — Valeurs mobilières | 🟢 | |
+| F70 | Imprimé 2050 — Bilan actif Cerfa | ✅ | Codes lignes exacts AA–BN |
+| F71 | Imprimé 2051 — Bilan passif Cerfa | ✅ | Codes lignes exacts CA–EE |
+| F72 | Imprimé 2052 — CR produits Cerfa | ✅ | Codes lignes exacts FA–HJ |
+| F73 | Imprimé 2053 — CR charges Cerfa | ✅ | Codes lignes exacts GA–HN |
+| F74 | Imprimé 2054 — Tableau immobilisations | ✅ | Début/acq/dim/fin simulés |
+| F75 | Imprimé 2055 — Tableau amortissements | ✅ | Début/dot/dim/fin simulés |
+| F76 | Imprimé 2056 — Tableau provisions | ✅ | |
+| F77 | Imprimé 2057 — Créances et dettes | ✅ | Ventilation échéances ≤1an / >1an |
+| F78 | Imprimé 2058-A — Résultat fiscal | ✅ | Réintégrations simulées 0.5–2% charges ext. |
+| F79 | Imprimé 2058-B — Déficits reportables | ✅ | Vide si bénéficiaire |
+| F80 | Imprimé 2058-C — Affectation résultat | ✅ | |
+| F81 | Imprimé 2059-A — Valeurs mobilières | ✅ | PV/MV latentes simulées |
 
 ## Paramétrage pédagogique
 

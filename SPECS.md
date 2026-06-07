@@ -1,6 +1,6 @@
 # SPECS — Bilapp
 > Source de vérité du projet. Toute implémentation découle de ce document.
-> Statut : 🟡 EN COURS — Session 003
+> Statut : 🟢 MVP COMPLET — Session 007
 
 ---
 
@@ -52,12 +52,13 @@ Bilapp/
 │   │   ├── form.js         ← formulaire multi-étapes + collecte BilanParams
 │   │   ├── bilan.js        ← renderer bilan + orchestration onglets + édition inline
 │   │   ├── resultat.js     ← renderer compte de résultat + édition inline
-│   │   ├── annexe.js       ← renderer annexe (P7)
-│   │   └── liasse.js       ← renderer liasse Cerfa 2050-2058 (P8)
+│   │   ├── annexe.js       ← renderer annexe comptable (4 sections)
+│   │   └── liasse.js       ← renderer liasse Cerfa 2050-2059-A (12 imprimés)
 │   ├── utils/
 │   │   └── doc-helpers.js  ← formatage montants, buildHeader, buildTabs
 │   ├── export/
-│   │   └── pdf.js          ← logique export PDF
+│   │   ├── pdf.js          ← logique export PDF
+│   │   └── session.js      ← save/load session JSON
 │   └── app.js              ← orchestrateur principal
 └── assets/
     └── cerfa/              ← templates visuels Cerfa
@@ -113,22 +114,27 @@ const BilanParams = {
 
 ## 6. Documents générés
 
-### 6.1 Bilan comptable
+### 6.1 Bilan comptable ✅
 - Format PCG, tableau Actif / Passif côte à côte
 - Colonnes : Brut / Amort&Dép / Net N / Net N-1 (si compareN1)
 - Contrainte : `Total Actif Net === Total Passif` (±1€)
 - Édition inline activée sur tous les postes de détail (voir §9)
 
-### 6.2 Compte de résultat
+### 6.2 Compte de résultat ✅
 - Format PCG, liste Produits → Charges → Résultats intermédiaires
 - Contrainte : `Résultat net === passif.capitauxPropres.resultat`
 - Édition inline activée sur tous les postes de détail (voir §9)
 
-### 6.3 Annexe — P7
-> À spécifier
+### 6.3 Annexe ✅
+- 4 sections : tableau des immobilisations, amortissements, capitaux propres, méthodes
+- Lecture seule
 
-### 6.4 Liasse fiscale Cerfa 2050-2058 — P8
-> À spécifier
+### 6.4 Liasse fiscale Cerfa 2050-2059-A ✅
+- 12 imprimés HTML fidèles au format Cerfa (cases numérotées, codes lignes AA/AB/…)
+- Lecture seule, mention FICTIF sur chaque imprimé
+- Onglet "Liasse" conditionnel sur `output.liasseFiscale`
+- CSS inline dans `liasse.js` (classes `.lf-*`)
+- Voir §10 pour le détail
 
 ---
 
@@ -141,7 +147,7 @@ Fonctions pures, zéro DOM. Produit un `BilanData` complet à partir de `BilanPa
 - CA tiré aléatoirement dans `TRANCHES_CA[params.taille.ca]` ±15%
 - Charges calculées via `RATIOS_SECTORIELS[secteur]`
 - Résultat net cible = CA × ratio `ORIENTATIONS[orientation]`
-- **Orientation neutre** : résultat net jamais nul — plancher ±1 000 € (voir §7.1)
+- **Orientation neutre** : résultat net randomisé dans `[-999, -1] ∪ [1, 999]` (jamais 0 ni ±1000 rond)
 - IS calculé : taux réduit 15% sur 42 500€, taux normal 25% au-delà
 - Amortissements : clampés à brut (amort ≤ brut, impossible en PCG)
 - Trésorerie = variable d'ajustement pour équilibrer actif/passif
@@ -153,9 +159,9 @@ Fonctions pures, zéro DOM. Produit un `BilanData` complet à partir de `BilanPa
 - Tous les montants arrondis à l'euro
 
 ### 7.1 Contrainte résultat neutre non-nul
-Un résultat net à 0 exact n'existe pas en pratique comptable.
+Un résultat net à 0 exact n'existe pas en pratique comptable. Un résultat parfaitement rond (±1 000€) non plus.
 Pour orientation `neutre`, si le résultat calculé est compris entre -1 000€ et +1 000€,
-on le force à ±1 000€ (signe conservé, ou positif si 0 exact).
+on le force à un entier aléatoire dans `[-999, -1] ∪ [1, 999]` (signe conservé, ou positif si 0 exact).
 Cette contrainte s'applique à la génération initiale ET à la réconciliation post-édition.
 
 ### BilanData — structure de sortie
@@ -221,7 +227,7 @@ Déclenchée à chaque confirmation. Reçoit BilanData + overrides + BilanParams
 ### Cohérence post-édition
 - L'orientation d'origine est une contrainte permanente
 - Si CA augmente sur une simulation neutre, les dotations absorbent pour maintenir l'équilibre
-- Résultat neutre jamais nul (plancher ±1 000€ appliqué aussi en réconciliation)
+- Résultat neutre jamais nul (plancher randomisé ±[1, 999]€ appliqué aussi en réconciliation)
 - Stocks bilan modifiés → variationStocks CR mis à jour automatiquement
 
 ### Déséquilibre résiduel
@@ -229,7 +235,50 @@ Bandeau rouge avec écart chiffré si trésorerie verrouillée.
 
 ---
 
-## 10. Export PDF — P6 ✅
+## 10. Liasse fiscale Cerfa (liasse.js) ✅
+
+### Architecture
+- Un seul fichier `js/modules/liasse.js`
+- Une fonction builder par imprimé : `build2050()`, `build2051()`, etc.
+- Export public : `buildLiasse(data, params)` → HTML pur
+- CSS inline dans le module (sélecteurs `.lf-*`)
+- Rendu lecture seule — zéro édition inline
+
+### Imprimés
+| Imprimé | Contenu | Source BilanData |
+|---------|---------|-----------------|
+| 2050 | Bilan actif | `bilan.actif` |
+| 2051 | Bilan passif | `bilan.passif` |
+| 2052 | CR — produits | `resultat.produitsExploitation` + financier + exceptionnel |
+| 2053 | CR — charges | `resultat.chargesExploitation` + financier + exceptionnel |
+| 2054 | Immobilisations | `bilan.actif.immobilise` — début/acq/dim/fin simulés (85%/15%) |
+| 2055 | Amortissements | idem — début/dot/dim/fin simulés (70%/30%) |
+| 2056 | Provisions | `bilan.passif.provisions` — début/dot/reprise simulés (60%/40%) |
+| 2057 | Créances et dettes | créances + dettes — ventilation échéances ≤1an/+1an simulée (60%/40%) |
+| 2058-A | Résultat fiscal | `resultat.resultatNet` + réintégrations + déductions simulées |
+| 2058-B | Déficits reportables | affiché si résultat fiscal négatif |
+| 2058-C | Affectation résultat | `bilan.passif.capitauxPropres` |
+| 2059-A | Valeurs mobilières | `bilan.actif.circulant.disponibilites.vmp` — PV/MV latentes simulées |
+
+### Réintégrations 2058-A
+- Réintégrations : 0.5–2% de `chargesExploitation.autresAchats`
+- Déductions : 0–1% du CA si `hasInternational`
+- Résultat fiscal = résultat comptable + réintégrations − déductions
+- IS recalculé sur résultat fiscal (15% / 25%, seuil 42 500€)
+
+---
+
+## 11. Bouton Régénérer ✅
+
+- Bouton 🔄 dans la barre d'actions de `bilan.js`
+- Appelle `generate(_currentParams)` → nouveau BilanData frais
+- Passe par `reconcile(freshData, getOverrides(), _currentParams)`
+- Les postes verrouillés (overrides) survivent — tout le reste est recalculé
+- Fonction `bindRegenerer()` appelée après chaque `renderTab`
+
+---
+
+## 12. Export PDF ✅
 
 - Basé sur `window.print()` + CSS `@media print`
 - `pdf.js` prépare `#print-target` avant impression, nettoie après
@@ -240,7 +289,15 @@ Bandeau rouge avec écart chiffré si trésorerie verrouillée.
 
 ---
 
-## 11. Évolutions futures (hors MVP)
+## 13. Session save/load ✅
+
+- `session.js` — save : sérialise `{ data, params, overrides }` → download `.json`
+- load : upload `.json` → restore state + overrides + re-render
+- Boutons 💾 / 📂 dans la barre d'actions
+
+---
+
+## 14. Évolutions futures (hors MVP)
 
 - **SIG / CAF** : Soldes Intermédiaires de Gestion et Capacité d'Autofinancement (resultat.js prêt)
 - **Ratios de rentabilité** : calculés depuis BilanData
@@ -248,10 +305,12 @@ Bandeau rouge avec écart chiffré si trésorerie verrouillée.
 - **SCI / EI** : formes juridiques supplémentaires
 - **Mode élève / formateur** : droits d'édition différenciés
 - **Export Excel/CSV**
+- **Dates d'exercice décalées** (ex: 01/04 → 31/03)
+- **SIRET/SIREN fictifs** (Luhn)
 
 ---
 
-## 12. Contraintes & hors-périmètre
+## 15. Contraintes & hors-périmètre
 
 - ❌ Pas de vrais numéros SIREN/SIRET valides
 - ❌ Pas de signature d'expert-comptable simulée
@@ -261,7 +320,7 @@ Bandeau rouge avec écart chiffré si trésorerie verrouillée.
 
 ---
 
-## 13. Roadmap MVP
+## 16. Roadmap MVP
 
 | Phase | Contenu                                          | Statut |
 |-------|--------------------------------------------------|--------|
@@ -274,5 +333,7 @@ Bandeau rouge avec écart chiffré si trésorerie verrouillée.
 | P5b   | Édition inline + overrides + reconcile           | ✅ |
 | P5c   | Fix cohérence CR↔bilan + résultat neutre non-nul | ✅ |
 | P6    | Export PDF                                       | ✅ |
-| P7    | Annexe                                           | 🔴 |
-| P8    | Liasse fiscale Cerfa                             | 🔴 |
+| P7    | Annexe                                           | ✅ |
+| P7b   | Session save/load                                | ✅ |
+| P8    | Liasse fiscale Cerfa 2050-2059-A                 | ✅ |
+| P8b   | Bouton Régénérer + fix résultat neutre randomisé | ✅ |

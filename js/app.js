@@ -22,6 +22,8 @@ import { initForm }        from './modules/form.js';
 import { generate }        from './core/engine.js';
 import { validate }        from './core/validator.js';
 import { renderDocuments } from './modules/bilan.js';
+import { loadSession }     from './export/session.js';
+import { clearOverrides, setOverride } from './core/overrides.js';
 
 // ============================================================
 // ÉTAT APPLICATIF
@@ -40,6 +42,7 @@ let _bilanData   = null;
  */
 function init() {
   initForm(onFormSubmit);
+  _bindLoadSessionHome();
 }
 
 // ============================================================
@@ -69,5 +72,45 @@ function onFormSubmit(bilanParams) {
 // ============================================================
 // DÉMARRAGE
 // ============================================================
+/**
+ * Ajoute un bouton "Charger une session" sur l'écran d'accueil.
+ * Injecté dans le header app après initForm.
+ */
+function _bindLoadSessionHome() {
+  const header = document.querySelector('.app-header .container');
+  if (!header) return;
+
+  const input = document.createElement('input');
+  input.type   = 'file';
+  input.accept = '.json';
+  input.style.display = 'none';
+  input.id = 'inputLoadHome';
+
+  const btn = document.createElement('button');
+  btn.className   = 'btn btn--ghost btn--sm';
+  btn.textContent = '📂 Charger une session';
+  btn.addEventListener('click', () => input.click());
+
+  input.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    input.value = '';
+    try {
+      const payload = await loadSession(file);
+      clearOverrides();
+      for (const [path, val] of payload.overrides) {
+        setOverride(path, val);
+      }
+      _bilanData   = payload.data;
+      _bilanParams = payload.params;
+      renderDocuments(_bilanData, _bilanParams);
+    } catch (err) {
+      alert(`Impossible de charger la session :\n${err.message}`);
+    }
+  });
+
+  header.appendChild(btn);
+  header.appendChild(input);
+}
 
 document.addEventListener('DOMContentLoaded', init);

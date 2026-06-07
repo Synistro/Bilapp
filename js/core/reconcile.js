@@ -173,10 +173,11 @@ function recalculerCRAvecOrientation(resultat, params) {
     resultat.resultatCourant + resultat.resultatExceptionnel - resultat.participation - resultat.impots
   );
 
-  // Plancher résultat neutre — jamais 0 exact
-  if (params.finance.orientation === 'neutre' && Math.abs(resultat.resultatNet) < PLANCHER_RESULTAT_NEUTRE) {
-    resultat.resultatNet = resultat.resultatNet >= 0 ? PLANCHER_RESULTAT_NEUTRE : -PLANCHER_RESULTAT_NEUTRE;
-  }
+// Plancher résultat neutre — randomisé dans [-plancher+1, -1] ∪ [1, plancher-1]
+if (params.finance.orientation === 'neutre' && Math.abs(resultat.resultatNet) < PLANCHER_RESULTAT_NEUTRE) {
+  const signe = resultat.resultatNet >= 0 ? 1 : -1;
+  resultat.resultatNet = signe * (1 + Math.floor(Math.random() * (PLANCHER_RESULTAT_NEUTRE - 1)));
+}
 }
 
 // ============================================================
