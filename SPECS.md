@@ -1,6 +1,7 @@
 # SPECS — Bilapp
 > Source de vérité du projet. Toute implémentation découle de ce document.
-> Statut : 🟢 MVP COMPLET — Session 007
+> Statut : 🟢 MVP COMPLET — Session 007-008
+> Dernière mise à jour : Session 008
 
 ---
 
@@ -59,7 +60,7 @@ Bilapp/
 │   ├── export/
 │   │   ├── pdf.js          ← logique export PDF
 │   │   └── session.js      ← save/load session JSON
-│   └── app.js              ← orchestrateur principal
+│   └── app.js              ← orchestrateur principal + load session accueil
 └── assets/
     └── cerfa/              ← templates visuels Cerfa
 ```
@@ -293,7 +294,8 @@ Bandeau rouge avec écart chiffré si trésorerie verrouillée.
 
 - `session.js` — save : sérialise `{ data, params, overrides }` → download `.json`
 - load : upload `.json` → restore state + overrides + re-render
-- Boutons 💾 / 📂 dans la barre d'actions
+- Boutons 💾 / 📂 dans la barre d'actions (vue documents)
+- Bouton 📂 également disponible sur la page d'accueil (header formulaire) — bypass formulaire → `renderDocuments()` directement
 
 ---
 
@@ -336,4 +338,5 @@ Bandeau rouge avec écart chiffré si trésorerie verrouillée.
 | P7    | Annexe                                           | ✅ |
 | P7b   | Session save/load                                | ✅ |
 | P8    | Liasse fiscale Cerfa 2050-2059-A                 | ✅ |
-| P8b   | Bouton Régénérer + fix résultat neutre randomisé | ✅ |
+| P8b   | Régénérer + fix résultat neutre randomisé        | ✅ |
+| P8c   | Load session depuis page d'accueil               | ✅ |

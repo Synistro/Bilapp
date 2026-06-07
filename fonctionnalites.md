@@ -89,18 +89,30 @@
 | F51 | Aspect international | ✅ | hasInternational |
 | F52 | Choix forme juridique (SAS, SARL, SA) | ✅ | |
 | F53 | Ratios sectoriels (commerce/services/industrie) | ✅ | RATIOS_SECTORIELS |
-| F54 | Dates de début/fin d'exercice paramétrables | 🔴 | Exercices décalés (ex: 01/04 → 31/03) |
-| F55 | SIRET/SIREN fictifs générés (Luhn) | 🔴 | |
-| F56 | Encart TVA pédagogique | 🟡 | |
-| F57 | Détail des frais de déplacement (625) | 🟡 | |
+| F54 | Dates d'exercice paramétrables (début/fin libres) | 🔴 | P9b — voir specs |
+| F55 | SIRET/SIREN fictifs générés (Luhn) | 🔴 | P9c — voir specs |
+| F56 | Adresse fictive générée (ville + CP cohérents) | 🔴 | P9c — voir specs |
+
+## Réalisme comptable (P9a)
+
+| # | Fonctionnalité | Statut | Notes |
+|---|---------------|--------|-------|
+| F90 | FR / BFR / Trésorerie nette calculés et affichés | 🔴 | P9a — onglet ou section dédiée |
+| F91 | SIG complet — VA, EBE, EBIT, RCAI | 🔴 | P9a — resultat.js prêt |
+| F92 | CAF — Capacité d'Autofinancement | 🔴 | P9a — idem |
+| F93 | Ratios de rentabilité (ROE, ROA, marge nette) | 🔴 | P9a — calculables depuis BilanData |
+
+## UX / Workflow (P9d)
+
+| # | Fonctionnalité | Statut | Notes |
+|---|---------------|--------|-------|
+| F95 | Duplication de session vers année suivante | 🔴 | P9d — N devient N-1, nouveaux params, voir specs |
 
 ## Évolutions futures (backlog)
 
 | # | Fonctionnalité | Statut | Notes |
 |---|---------------|--------|-------|
-| F60 | SIG — Soldes Intermédiaires de Gestion | 🟡 | resultat.js prêt |
-| F61 | CAF — Capacité d'Autofinancement | 🟡 | idem |
-| F62 | Ratios de rentabilité | 🟡 | calculables depuis BilanData |
-| F63 | Tableau de financement | 🔴 | Niveau DSCG |
-| F64 | Mode élève / formateur | 🔴 | Droits d'édition différenciés |
-| F65 | SCI / EI — formes juridiques supplémentaires | 🔴 | |
+| F60 | Tableau de financement | 🔴 | Niveau DSCG |
+| F61 | Mode élève / formateur | 🔴 | Droits d'édition différenciés |
+| F62 | SCI / EI — formes juridiques supplémentaires | 🔴 | |
+| F63 | Export Excel / CSV | 🔴 | |
