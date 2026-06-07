@@ -59,7 +59,7 @@
 | F41 | En-tête navy imprimé avec couleurs | ✅ | print-color-adjust |
 | F42 | Mention fictif en pied de page | ✅ | .print-footer |
 | F43 | Saut de page actif / passif | ✅ | print.css |
-| F44 | Save session → download `.json` | ✅ | session.js, bouton 💾 |
+| F44 | Save session → download `.json` | ✅ | session.js v2.0, bouton 💾 |
 | F45 | Load session → upload `.json` → restore (vue documents) | ✅ | session.js, bouton 📂 |
 | F46 | Load session depuis la page d'accueil | ✅ | app.js — _bindLoadSessionHome() |
 | F47 | Export Excel / CSV | 🔴 | Backlog |
@@ -89,24 +89,24 @@
 | F51 | Aspect international | ✅ | hasInternational |
 | F52 | Choix forme juridique (SAS, SARL, SA) | ✅ | |
 | F53 | Ratios sectoriels (commerce/services/industrie) | ✅ | RATIOS_SECTORIELS |
-| F54 | Dates d'exercice paramétrables (début/fin libres) | 🔴 | P9b — voir specs |
-| F55 | SIRET/SIREN fictifs générés (Luhn) | 🔴 | P9c — voir specs |
-| F56 | Adresse fictive générée (ville + CP cohérents) | 🔴 | P9c — voir specs |
+| F54 | Exercice décalé — date de début libre | 🟢 | Voir spec ci-dessous |
+| F55 | SIRET/SIREN fictifs générés (Luhn) | ✅ | P9c — identite.js |
+| F56 | Adresse fictive générée (ville + CP cohérents) | ✅ | P9c — identite.js, VILLES_FR dans constants.js |
 
-## Réalisme comptable (P9a)
-
-| # | Fonctionnalité | Statut | Notes |
-|---|---------------|--------|-------|
-| F90 | FR / BFR / Trésorerie nette calculés et affichés | 🔴 | P9a — onglet ou section dédiée |
-| F91 | SIG complet — VA, EBE, EBIT, RCAI | 🔴 | P9a — resultat.js prêt |
-| F92 | CAF — Capacité d'Autofinancement | 🔴 | P9a — idem |
-| F93 | Ratios de rentabilité (ROE, ROA, marge nette) | 🔴 | P9a — calculables depuis BilanData |
-
-## UX / Workflow (P9d)
+## Réalisme comptable (P9a — terminée)
 
 | # | Fonctionnalité | Statut | Notes |
 |---|---------------|--------|-------|
-| F95 | Duplication de session vers année suivante | 🔴 | P9d — N devient N-1, nouveaux params, voir specs |
+| F90 | FR / BFR / Trésorerie nette calculés et affichés | ✅ | P9a — ratios.js, onglet Analyse |
+| F91 | SIG complet — VA, EBE, EBIT, RCAI | ✅ | P9a — ratios.js |
+| F92 | CAF — Capacité d'Autofinancement | ✅ | P9a — ratios.js |
+| F93 | Ratios de rentabilité (ROE, ROA, marge nette, autonomie) | ✅ | P9a — ratios.js |
+
+## UX / Workflow (P9d — terminée)
+
+| # | Fonctionnalité | Statut | Notes |
+|---|---------------|--------|-------|
+| F95 | Duplication de session vers année suivante | ✅ | P9d — bilan.js bindAnneeSuivante(), session.js v2.0 dataN1Figee |
 
 ## Évolutions futures (backlog)
 
@@ -116,3 +116,67 @@
 | F61 | Mode élève / formateur | 🔴 | Droits d'édition différenciés |
 | F62 | SCI / EI — formes juridiques supplémentaires | 🔴 | |
 | F63 | Export Excel / CSV | 🔴 | |
+
+---
+
+## Spec F54 — Exercice décalé
+
+### Contexte
+En France, une société peut ouvrir son exercice n'importe quel jour de l'année.
+Cas fréquents en pédagogie : 01/07→30/06 (grande distribution, agriculture),
+01/04→31/03 (filiales UK/JP), et surtout **première année incomplète** (création
+en cours d'année, ex. 15/03/2024 → 31/12/2024 = 9,5 mois).
+
+### Ce qui change dans le formulaire (étape 1)
+- Remplacer le champ `anneeExercice` (number) par deux champs :
+  - `dateDebut` — `<input type="date">` — défaut : 01/01/année précédente
+  - `dateFin`   — `<input type="date">` — défaut : 31/12/même année
+- Validation : dateFin > dateDebut, durée ≤ 24 mois (exercice exceptionnel max légal)
+- La durée en mois est calculée et stockée dans `params.societe.dureeExerciceMois`
+
+### Ce qui change dans BilanParams
+```js
+societe: {
+  // Remplace anneeExercice
+  dateDebut:           'YYYY-MM-DD',  // ex. '2024-03-15'
+  dateFin:             'YYYY-MM-DD',  // ex. '2024-12-31'
+  dureeExerciceMois:   number,        // ex. 9.5 — calculé, pas saisi
+  // anneeExercice conservé comme alias = année de dateFin (rétrocompat sessions v1/v2)
+  anneeExercice:       number,
+  // ... reste inchangé
+}
+```
+
+### Ce qui change dans engine.js
+- Le CA généré est multiplié par `dureeExerciceMois / 12` si durée < 12 mois
+  (ex. 9 mois → CA × 0.75). Cela rend le bilan cohérent pour une première année courte.
+- Pas de prorata si durée ≥ 12 mois (exercice normal ou exceptionnel long).
+
+### Ce qui change dans doc-helpers.js — buildHeader
+- Affichage : "Exercice du JJ/MM/AAAA au JJ/MM/AAAA" au lieu de "Exercice clos le 31/12/AAAA"
+- Si durée < 12 mois : badge "(exercice court — X mois)" visible dans l'en-tête
+
+### Ce qui change dans les renderers
+- `bilan.js`, `resultat.js`, `annexe.js`, `liasse.js` : partout où on affiche
+  `anneeExercice` seul, on affiche la plage de dates.
+- La liasse fiscale (Cerfa) utilise déjà des champs date — à câbler avec dateDebut/dateFin.
+
+### Rétrocompatibilité sessions v1.0 / v2.0
+- Au chargement d'une session ancienne sans `dateDebut`/`dateFin` :
+  reconstruire `dateDebut = '${anneeExercice}-01-01'`, `dateFin = '${anneeExercice}-12-31'`
+
+### Fichiers touchés
+| Fichier | Nature de la modif |
+|---------|-------------------|
+| `js/modules/form.js` | Remplace Q05 par deux date pickers + validation + calcul durée |
+| `js/core/constants.js` | Aucune |
+| `js/core/engine.js` | Prorata CA si dureeExerciceMois < 12 |
+| `js/utils/doc-helpers.js` | buildHeader — affichage plage dates + badge exercice court |
+| `js/export/session.js` | v3.0 — migration rétrocompat dateDebut/dateFin |
+| `js/modules/bilan.js` | Passe dateDebut/dateFin là où anneeExercice est affiché |
+| `js/modules/resultat.js` | Idem |
+| `js/modules/annexe.js` | Idem |
+| `js/modules/liasse.js` | Câblage champs date Cerfa |
+
+### Estimation complexité
+~4–5k tokens. Session courte autonome.
