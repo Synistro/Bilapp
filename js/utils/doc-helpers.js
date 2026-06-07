@@ -52,6 +52,21 @@ export function zeroCls(n) {
 }
 
 // ============================================================
+// FORMATAGE DES DATES
+// ============================================================
+
+/**
+ * Formate une date ISO 'YYYY-MM-DD' en 'DD/MM/YYYY' pour l'affichage.
+ * @param {string} iso
+ * @returns {string}
+ */
+export function fmtDateFR(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+// ============================================================
 // EN-TÊTE DOCUMENT
 // ============================================================
 
@@ -63,6 +78,44 @@ export function zeroCls(n) {
 function fmtSIRET(siret) {
   if (!siret || siret.length !== 14) return siret ?? '';
   return `${siret.slice(0, 3)} ${siret.slice(3, 6)} ${siret.slice(6, 9)} ${siret.slice(9)}`;
+}
+
+/**
+ * Construit la ligne "Exercice" de l'en-tête selon le type d'exercice.
+ *
+ * Logique F54 :
+ *   - Exercice standard (01/01 → 31/12)  : "Exercice clos le 31/12/YYYY"
+ *   - Exercice décalé ou court            : "Exercice du JJ/MM/YYYY au JJ/MM/YYYY"
+ *   - Court (< 11.5 mois)                 : badge "(exercice court — X mois)" ajouté
+ *
+ * @param {object} meta  BilanData.meta
+ * @returns {string}     HTML de la ligne exercice
+ */
+function _buildExerciceLine(meta) {
+  const dateDebut = meta.dateDebut;
+  const dateFin   = meta.dateFin;
+  const duree     = meta.dureeExerciceMois ?? 12;
+
+  // Exercice standard : commence le 01/01
+  const debutD    = dateDebut ? new Date(dateDebut) : null;
+  const estDecale = debutD && (debutD.getMonth() !== 0 || debutD.getDate() !== 1);
+  const estCourt  = duree < 11.5;
+
+  if (!estDecale && !estCourt && dateFin) {
+    // Cas nominal — affichage classique
+    return `<div class="doc-header__exercice">Exercice clos le ${fmtDateFR(dateFin)}</div>`;
+  }
+
+  // Exercice décalé ou court — plage complète
+  const badge = estCourt
+    ? ` <span class="doc-header__exercice-badge">(exercice court — ${Number.isInteger(duree) ? duree : duree.toFixed(1)} mois)</span>`
+    : '';
+
+  return `
+    <div class="doc-header__exercice">
+      Exercice du ${fmtDateFR(dateDebut)} au ${fmtDateFR(dateFin)}${badge}
+    </div>
+  `;
 }
 
 /**
@@ -104,9 +157,7 @@ export function buildHeader(meta, titre) {
       </div>
       <div class="doc-header__right">
         <div class="doc-header__title">${titre}</div>
-        <div class="doc-header__exercice">
-          Exercice clos le 31/12/${meta.anneeExercice}
-        </div>
+        ${_buildExerciceLine(meta)}
         <div class="doc-header__mention">${meta.mention}</div>
       </div>
     </div>

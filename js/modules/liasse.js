@@ -17,6 +17,7 @@
 'use strict';
 
 import { TAUX, MENTION_FICTIF } from '../core/constants.js';
+import { fmtDateFR }            from '../utils/doc-helpers.js';
 
 // ============================================================
 // CONSTANTES LIASSE
@@ -71,6 +72,23 @@ function lt(code, libelle, v1, v2 = null, v3 = null, cls = 'lf-subtotal') {
 }
 
 /**
+ * Construit la ligne "Exercice" de l'en-tête Cerfa.
+ * F54 : affiche la plage si exercice décalé ou court.
+ * @param {object} meta  BilanData.meta
+ * @returns {string}
+ */
+function _exerciceLigne(meta) {
+  const debutD    = meta.dateDebut ? new Date(meta.dateDebut) : null;
+  const estDecale = debutD && (debutD.getMonth() !== 0 || debutD.getDate() !== 1);
+  const estCourt  = (meta.dureeExerciceMois ?? 12) < 11.5;
+
+  if ((estDecale || estCourt) && meta.dateDebut && meta.dateFin) {
+    return `Du ${fmtDateFR(meta.dateDebut)} au ${fmtDateFR(meta.dateFin)}`;
+  }
+  return `Exercice clos le ${fmtDateFR(meta.dateFin) || `31/12/${meta.anneeExercice}`}`;
+}
+
+/**
  * En-tête d'un imprimé Cerfa.
  * @param {string} cerfa    ex: "2050"
  * @param {string} titre    ex: "Bilan — Actif"
@@ -85,7 +103,7 @@ function impriméHeader(cerfa, titre, meta) {
       </div>
       <div class="lf-imprime-header__right">
         <div class="lf-societe">${meta.societe} — ${meta.formeJuridique}</div>
-        <div class="lf-exercice">Exercice clos le 31/12/${meta.anneeExercice}</div>
+        <div class="lf-exercice">${_exerciceLigne(meta)}</div>
         <div class="lf-mention">${MENTION_FICTIF}</div>
       </div>
     </div>

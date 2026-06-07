@@ -114,6 +114,22 @@
   font-size: var(--text-sm);
   color: rgba(255,255,255,0.75);
   margin-bottom: var(--space-3);
+  line-height: var(--leading-normal);
+}
+
+/* F54 — Badge "(exercice court — X mois)" dans l'en-tête document */
+.doc-header__exercice-badge {
+  display: inline-block;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  color: #fff8c5;
+  background: rgba(255, 220, 50, 0.18);
+  border: 1px solid rgba(255, 220, 50, 0.35);
+  border-radius: var(--radius-full);
+  padding: 1px var(--space-2);
+  margin-left: var(--space-2);
+  white-space: nowrap;
+  vertical-align: middle;
 }
 
 .doc-header__mention {

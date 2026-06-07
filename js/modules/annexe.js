@@ -20,8 +20,8 @@
 
 'use strict';
 
-import { fmt, fmtResultat } from '../utils/doc-helpers.js';
-import { DUREES_AMORT }     from '../core/constants.js';
+import { fmt, fmtResultat, fmtDateFR } from '../utils/doc-helpers.js';
+import { DUREES_AMORT }                 from '../core/constants.js';
 
 // ============================================================
 // UTILITAIRES INTERNES
@@ -303,6 +303,7 @@ function buildVariationCP(cpN, cpN1) {
 /**
  * Génère le bloc textuel des méthodes comptables.
  * Les durées viennent de DUREES_AMORT (constants.js).
+ * F54 : utilise la plage de dates si exercice décalé/court.
  * @param {object} meta  BilanData.meta
  * @returns {string}
  */
@@ -317,12 +318,20 @@ function buildMethodes(meta) {
     `)
     .join('');
 
+  // F54 — libellé de la période dans le texte des méthodes
+  const debutD    = meta.dateDebut ? new Date(meta.dateDebut) : null;
+  const estDecale = debutD && (debutD.getMonth() !== 0 || debutD.getDate() !== 1);
+  const estCourt  = (meta.dureeExerciceMois ?? 12) < 11.5;
+  const periodeTxt = (estDecale || estCourt) && meta.dateDebut && meta.dateFin
+    ? `du <strong>${fmtDateFR(meta.dateDebut)}</strong> au <strong>${fmtDateFR(meta.dateFin)}</strong>`
+    : `clos le <strong>31/12/${meta.anneeExercice}</strong>`;
+
   return `
     <div class="doc-section">
       <div class="doc-section__title">4. Règles et méthodes comptables</div>
 
       <p class="annexe-note">
-        Les comptes de l'exercice clos le <strong>31/12/${meta.anneeExercice}</strong> sont établis
+        Les comptes de l'exercice ${periodeTxt} sont établis
         conformément aux dispositions du Plan Comptable Général (PCG 2024) et du Code de commerce.
         Les méthodes d'évaluation retenues sont identiques à celles de l'exercice précédent.
       </p>

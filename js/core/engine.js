@@ -267,12 +267,23 @@ function calculerPassif(params, ca, resultatNet) {
 
 /**
  * Génère un objet BilanData complet à partir de BilanParams.
+ *
+ * F54 — Exercice décalé :
+ *   Si dureeExerciceMois < 12, le CA est proraté avant toute génération.
+ *   Un exercice de 9 mois ne peut pas afficher le même CA qu'un exercice plein.
+ *
  * @param {object} params  BilanParams produit par form.js
  * @returns {object}       BilanData complet
  */
 export function generate(params) {
   const tranche = TRANCHES_CA[params.taille.ca];
-  const ca      = varier(randInt(tranche.min, tranche.max));
+  let ca        = varier(randInt(tranche.min, tranche.max));
+
+  // F54 — prorata CA si exercice court (< 12 mois)
+  const duree = params.societe.dureeExerciceMois ?? 12;
+  if (duree < 12) {
+    ca = Math.round(ca * (duree / 12));
+  }
 
   const resultat        = calculerResultat(params, ca);
   const passif          = calculerPassif(params, ca, resultat.resultatNet);
@@ -315,7 +326,13 @@ export function generate(params) {
       totalNetN1 += ecartN1;
     }
     n1 = {
-      meta: { anneeExercice: params.societe.anneeExercice - 1 },
+      meta: {
+        anneeExercice:     params.societe.anneeExercice - 1,
+        // N-1 : exercice plein supposé (01/01 → 31/12 de l'année précédente)
+        dateDebut:         `${params.societe.anneeExercice - 1}-01-01`,
+        dateFin:           `${params.societe.anneeExercice - 1}-12-31`,
+        dureeExerciceMois: 12,
+      },
       bilan: {
         actif: { immobilise: immoN1, circulant: circN1, regularisation: regulN1, totalNet: totalNetN1 },
         passif: passifN1,
@@ -329,6 +346,10 @@ export function generate(params) {
       societe:            params.societe.nom,
       formeJuridique:     params.societe.formeJuridique,
       secteur:            params.societe.secteur,
+      // F54 — dates complètes dans meta
+      dateDebut:          params.societe.dateDebut,
+      dateFin:            params.societe.dateFin,
+      dureeExerciceMois:  duree,
       anneeExercice:      params.societe.anneeExercice,
       anneeN1:            params.societe.anneeExercice - 1,
       regimeTVA:          params.finance.regimeTVA,
@@ -337,7 +358,6 @@ export function generate(params) {
       hasImmobilisations: params.finance.hasImmobilisations,
       orientation:        params.finance.orientation,
       mention:            MENTION_FICTIF,
-      // P9c — identité fictive générée à la création du formulaire
       siret:              params.societe.siret   ?? null,
       adresse:            params.societe.adresse ?? null,
     },

@@ -3,9 +3,9 @@
  * -------------------------------------------------------
  * Save/Load d'une session Bilapp au format JSON.
  *
- * Format de fichier v2.0 :
+ * Format de fichier v3.0 :
  *   {
- *     version:      string,             // "2.0"
+ *     version:      string,             // "3.0"
  *     timestamp:    string,             // ISO 8601
  *     params:       BilanParams,        // paramètres du formulaire
  *     data:         BilanData,          // données N calculées (snapshot)
@@ -13,7 +13,9 @@
  *     dataN1Figee:  BilanData | null    // données N-1 figées (P9d)
  *   }
  *
- * Rétrocompatibilité : les sessions v1.0 sont acceptées (dataN1Figee absent → null).
+ * Rétrocompatibilité :
+ *   v1.0 — dataN1Figee absent → null ; dateDebut/dateFin reconstruits depuis anneeExercice
+ *   v2.0 — dateDebut/dateFin absents  → reconstruits depuis anneeExercice
  *
  * Exports :
  *   saveSession(data, params, overrides, dataN1Figee?)
@@ -23,7 +25,7 @@
 'use strict';
 
 /** Version courante du format. Incrémenter si structure change. */
-const SESSION_VERSION = '2.0';
+const SESSION_VERSION = '3.0';
 
 // ============================================================
 // SAVE
@@ -63,13 +65,27 @@ export function saveSession(data, params, overrides, dataN1Figee = null) {
 
 /**
  * Construit le nom de fichier suggéré à partir des params.
- * Ex. : bilapp_AcmeSarl_2024.json
+ * Ex. : bilapp_AcmeSarl_2024.json (exercice standard)
+ *       bilapp_AcmeSarl_2024-03-15_2024-12-31.json (exercice décalé)
  *
  * @param {object} params BilanParams
  * @returns {string}
  */
 function _buildFilename(params) {
   const nom   = (params.societe?.nom ?? 'societe').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+  const debut = params.societe?.dateDebut;
+  const fin   = params.societe?.dateFin;
+
+  // Exercice décalé ou court → inclure les deux dates dans le nom
+  const debutD    = debut ? new Date(debut) : null;
+  const estDecale = debutD && (debutD.getMonth() !== 0 || debutD.getDate() !== 1);
+  const duree     = params.societe?.dureeExerciceMois ?? 12;
+  const estCourt  = duree < 11.5;
+
+  if ((estDecale || estCourt) && debut && fin) {
+    return `bilapp_${nom}_${debut}_${fin}.json`;
+  }
+
   const annee = params.societe?.anneeExercice ?? new Date().getFullYear();
   return `bilapp_${nom}_${annee}.json`;
 }
@@ -103,7 +119,7 @@ export function loadSession(file) {
     reader.onload = (e) => {
       try {
         const payload = JSON.parse(e.target.result);
-        _validatePayload(payload);
+        _validateAndMigrate(payload);
         resolve(payload);
       } catch (err) {
         reject(new Error(`[Bilapp session] Fichier invalide : ${err.message}`));
@@ -117,27 +133,53 @@ export function loadSession(file) {
 }
 
 /**
- * Vérifie la structure minimale du payload chargé.
- * Tolère les sessions v1.0 (dataN1Figee absent).
+ * Vérifie la structure minimale du payload et applique les migrations.
+ *
+ * Migrations :
+ *   v1.0 / v2.0 → v3.0 :
+ *     params.societe.dateDebut/dateFin absents → reconstruire depuis anneeExercice
+ *     dureeExerciceMois absent → 12 (exercice plein supposé)
+ *
  * @param {object} payload
  * @throws {Error}
  */
-function _validatePayload(payload) {
+function _validateAndMigrate(payload) {
   if (!payload || typeof payload !== 'object') {
     throw new Error('JSON vide ou non-objet.');
   }
   if (!payload.version || !payload.params || !payload.data) {
     throw new Error('Champs obligatoires manquants (version, params, data).');
   }
-  if (payload.version !== SESSION_VERSION) {
-    // Avertissement non bloquant — on charge les sessions v1.0
-    console.warn(`[Bilapp session] Version ${payload.version} ≠ ${SESSION_VERSION} — compatibilité assurée.`);
-  }
+
   if (!Array.isArray(payload.overrides)) {
     payload.overrides = [];
   }
+
   // Rétrocompatibilité v1.0 : dataN1Figee absent → null
   if (!('dataN1Figee' in payload)) {
     payload.dataN1Figee = null;
+  }
+
+  // Migration v1.0 / v2.0 → v3.0 : champs dates absents
+  const s = payload.params.societe;
+  if (s && !s.dateDebut) {
+    const annee = s.anneeExercice ?? new Date().getFullYear() - 1;
+    s.dateDebut         = `${annee}-01-01`;
+    s.dateFin           = `${annee}-12-31`;
+    s.dureeExerciceMois = 12;
+    console.info(`[Bilapp session] Migration v${payload.version}→v3.0 : dates reconstruites depuis anneeExercice=${annee}`);
+  }
+
+  // Garantir dureeExerciceMois même si dateFin présent mais durée absente
+  if (s && s.dateDebut && s.dateFin && !s.dureeExerciceMois) {
+    const d = new Date(s.dateDebut);
+    const f = new Date(s.dateFin);
+    s.dureeExerciceMois = Math.round(((f - d) / (1000 * 60 * 60 * 24 * (365.25 / 12))) * 100) / 100;
+  }
+
+  // Mettre à jour la version dans le payload chargé
+  if (payload.version !== SESSION_VERSION) {
+    console.warn(`[Bilapp session] Version ${payload.version} migrée vers ${SESSION_VERSION}.`);
+    payload.version = SESSION_VERSION;
   }
 }

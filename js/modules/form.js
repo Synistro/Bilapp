@@ -31,6 +31,16 @@ import {
 import { genererIdentite } from '../utils/identite.js';
 
 // ============================================================
+// CONSTANTES
+// ============================================================
+
+/** Durée maximale légale d'un exercice en France (24 mois) */
+const DUREE_EXERCICE_MAX_MOIS = 24;
+
+/** Seuil en-dessous duquel on affiche le badge "exercice court" */
+const SEUIL_EXERCICE_COURT_MOIS = 11.5;
+
+// ============================================================
 // ÉTAT INTERNE DU FORMULAIRE
 // ============================================================
 
@@ -53,13 +63,19 @@ let _onSubmit = null;
  */
 function _defaultParams() {
   const { siret, adresse } = genererIdentite();
+  const anneeDefaut = new Date().getFullYear() - 1;
   return {
     societe: {
-      nom:            '',
-      formeJuridique: '',
-      secteur:        '',
-      activiteDetail: '',
-      anneeExercice:  new Date().getFullYear() - 1,
+      nom:               '',
+      formeJuridique:    '',
+      secteur:           '',
+      activiteDetail:    '',
+      // F54 — dates d'exercice
+      dateDebut:         `${anneeDefaut}-01-01`,
+      dateFin:           `${anneeDefaut}-12-31`,
+      dureeExerciceMois: 12,
+      // Alias rétrocompat — toujours = année de dateFin
+      anneeExercice:     anneeDefaut,
       siret,
       adresse,
     },
@@ -85,6 +101,36 @@ function _defaultParams() {
       analyse:        false,
     },
   };
+}
+
+// ============================================================
+// UTILITAIRE — CALCUL DURÉE EXERCICE
+// ============================================================
+
+/**
+ * Calcule la durée en mois décimaux entre deux dates ISO 'YYYY-MM-DD'.
+ * Ex. : '2024-03-15' → '2024-12-31' ≈ 9.53 mois
+ * @param {string} dateDebut
+ * @param {string} dateFin
+ * @returns {number} durée en mois décimaux (arrondie à 2 décimales)
+ */
+function _calcDureeExerciceMois(dateDebut, dateFin) {
+  const d = new Date(dateDebut);
+  const f = new Date(dateFin);
+  const msParMois = 1000 * 60 * 60 * 24 * (365.25 / 12);
+  const mois = (f - d) / msParMois;
+  return Math.round(mois * 100) / 100;
+}
+
+/**
+ * Formate une date ISO 'YYYY-MM-DD' en 'DD/MM/YYYY' pour l'affichage.
+ * @param {string} iso
+ * @returns {string}
+ */
+export function fmtDateFR(iso) {
+  if (!iso) return '';
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
 }
 
 // ============================================================
@@ -221,9 +267,11 @@ function _fillFormFromParams(step) {
     _setVal('formeJuridique', _params.societe.formeJuridique);
     _setVal('secteur',        _params.societe.secteur);
     _setVal('activiteDetail', _params.societe.activiteDetail);
-    _setVal('anneeExercice',  _params.societe.anneeExercice);
+    _setVal('dateDebut',      _params.societe.dateDebut);
+    _setVal('dateFin',        _params.societe.dateFin);
     if (_params.societe.formeJuridique) _selectRadio('formeJuridique', _params.societe.formeJuridique);
     if (_params.societe.secteur)        _selectRadio('secteur', _params.societe.secteur);
+    _updateDureeDisplay();
   }
   if (step === 2) {
     if (_params.taille.ca)         _selectRadio('ca', _params.taille.ca);
@@ -276,6 +324,8 @@ function _buildStep1() {
       </div>
     </label>
   `).join('');
+
+  const anneeActuelle = new Date().getFullYear();
 
   return `
     <div class="step-header">
@@ -334,18 +384,34 @@ function _buildStep1() {
       />
     </div>
 
-    <!-- Q05 — Exercice -->
+    <!-- Q05 — Exercice comptable (F54) -->
     <div class="form-group">
-      <label class="form-label" for="anneeExercice">Année de l'exercice comptable</label>
-      <input
-        class="form-input"
-        type="number"
-        id="anneeExercice"
-        name="anneeExercice"
-        min="2010"
-        max="${new Date().getFullYear()}"
-        style="max-width: 160px;"
-      />
+      <label class="form-label">Période de l'exercice comptable</label>
+      <div class="date-range-group">
+        <div class="date-range-group__field">
+          <label class="form-label form-label--sub" for="dateDebut">Début</label>
+          <input
+            class="form-input"
+            type="date"
+            id="dateDebut"
+            name="dateDebut"
+            max="${anneeActuelle}-12-31"
+          />
+        </div>
+        <div class="date-range-group__sep">→</div>
+        <div class="date-range-group__field">
+          <label class="form-label form-label--sub" for="dateFin">Fin</label>
+          <input
+            class="form-input"
+            type="date"
+            id="dateFin"
+            name="dateFin"
+            max="${anneeActuelle}-12-31"
+          />
+        </div>
+      </div>
+      <!-- Badge durée — mis à jour dynamiquement -->
+      <div class="exercice-duree" id="exerciceDuree"></div>
     </div>
   `;
 }
@@ -711,8 +777,15 @@ function _collectStep(step) {
     _params.societe.formeJuridique = _getRadio('formeJuridique');
     _params.societe.secteur        = _getRadio('secteur');
     _params.societe.activiteDetail = _getVal('activiteDetail');
-    _params.societe.anneeExercice  = parseInt(_getVal('anneeExercice'), 10);
-    // siret et adresse conservés tels quels (générés à l'init)
+
+    // F54 — dates d'exercice
+    const dateDebut = _getVal('dateDebut');
+    const dateFin   = _getVal('dateFin');
+    _params.societe.dateDebut         = dateDebut;
+    _params.societe.dateFin           = dateFin;
+    _params.societe.dureeExerciceMois = _calcDureeExerciceMois(dateDebut, dateFin);
+    // Alias rétrocompat — année de clôture
+    _params.societe.anneeExercice     = new Date(dateFin).getFullYear();
   }
   if (step === 2) {
     _params.taille.ca         = _getRadio('ca');
@@ -755,12 +828,29 @@ function _validateStep(step) {
   const errors = [];
 
   if (step === 1) {
-    if (!_getVal('nom').trim())         errors.push({ field: 'nom',            message: 'Le nom de la société est obligatoire.' });
-    if (!_getRadio('formeJuridique'))   errors.push({ field: 'formeJuridique', message: 'Sélectionnez une forme juridique.' });
-    if (!_getRadio('secteur'))          errors.push({ field: 'secteur',        message: "Sélectionnez un secteur d'activité." });
-    const annee = parseInt(_getVal('anneeExercice'), 10);
-    if (isNaN(annee) || annee < 2010 || annee > new Date().getFullYear()) {
-      errors.push({ field: 'anneeExercice', message: 'Année invalide (2010 — année courante).' });
+    if (!_getVal('nom').trim())       errors.push({ field: 'nom',            message: 'Le nom de la société est obligatoire.' });
+    if (!_getRadio('formeJuridique')) errors.push({ field: 'formeJuridique', message: 'Sélectionnez une forme juridique.' });
+    if (!_getRadio('secteur'))        errors.push({ field: 'secteur',        message: "Sélectionnez un secteur d'activité." });
+
+    // F54 — validation dates
+    const dateDebut = _getVal('dateDebut');
+    const dateFin   = _getVal('dateFin');
+
+    if (!dateDebut) {
+      errors.push({ field: 'dateDebut', message: "La date de début d'exercice est obligatoire." });
+    }
+    if (!dateFin) {
+      errors.push({ field: 'dateFin', message: "La date de fin d'exercice est obligatoire." });
+    }
+    if (dateDebut && dateFin) {
+      if (dateFin <= dateDebut) {
+        errors.push({ field: 'dateFin', message: 'La date de fin doit être postérieure à la date de début.' });
+      } else {
+        const duree = _calcDureeExerciceMois(dateDebut, dateFin);
+        if (duree > DUREE_EXERCICE_MAX_MOIS) {
+          errors.push({ field: 'dateFin', message: `La durée de l'exercice ne peut excéder ${DUREE_EXERCICE_MAX_MOIS} mois (durée calculée : ${Math.round(duree)} mois).` });
+        }
+      }
     }
   }
 
@@ -812,6 +902,48 @@ function _showErrors(errors) {
 // ============================================================
 
 /**
+ * Met à jour le badge de durée d'exercice sous les date pickers.
+ * Appelé à chaque changement de dateDebut ou dateFin.
+ */
+function _updateDureeDisplay() {
+  const el = document.getElementById('exerciceDuree');
+  if (!el) return;
+
+  const dateDebut = _getVal('dateDebut');
+  const dateFin   = _getVal('dateFin');
+
+  if (!dateDebut || !dateFin || dateFin <= dateDebut) {
+    el.textContent = '';
+    el.className = 'exercice-duree';
+    return;
+  }
+
+  const duree = _calcDureeExerciceMois(dateDebut, dateFin);
+  if (duree > DUREE_EXERCICE_MAX_MOIS) {
+    el.textContent = `⚠ Durée maximale dépassée (${Math.round(duree)} mois — max ${DUREE_EXERCICE_MAX_MOIS} mois)`;
+    el.className = 'exercice-duree exercice-duree--error';
+    return;
+  }
+
+  const debutD  = new Date(dateDebut);
+  const estDecale = debutD.getMonth() !== 0 || debutD.getDate() !== 1; // pas 01/01
+  const estCourt  = duree < SEUIL_EXERCICE_COURT_MOIS;
+
+  const moisAff = Number.isInteger(duree) ? duree : duree.toFixed(1);
+
+  if (estCourt) {
+    el.textContent = `Exercice court — ${moisAff} mois`;
+    el.className = 'exercice-duree exercice-duree--court';
+  } else if (estDecale) {
+    el.textContent = `Exercice décalé — ${moisAff} mois`;
+    el.className = 'exercice-duree exercice-duree--decale';
+  } else {
+    el.textContent = `Exercice standard — ${moisAff} mois`;
+    el.className = 'exercice-duree exercice-duree--normal';
+  }
+}
+
+/**
  * Masque/affiche le toggle Stocks selon le secteur.
  * Appelé à l'init de l'étape 3 et au changement de valeur.
  */
@@ -839,20 +971,29 @@ function _applySmartDefaults() {
 
 /**
  * Construit et injecte le récapitulatif dans l'étape 4.
+ * Affiche la plage de dates si exercice décalé ou court.
  */
 function _buildRecap() {
   const grid = document.getElementById('recapGrid');
   if (!grid) return;
 
+  // Affichage exercice : plage si décalé/court, année seule sinon
+  const debutD   = new Date(_params.societe.dateDebut);
+  const estDecale = debutD.getMonth() !== 0 || debutD.getDate() !== 1;
+  const estCourt  = _params.societe.dureeExerciceMois < SEUIL_EXERCICE_COURT_MOIS;
+  const exerciceAff = (estDecale || estCourt)
+    ? `${fmtDateFR(_params.societe.dateDebut)} → ${fmtDateFR(_params.societe.dateFin)}`
+    : String(_params.societe.anneeExercice);
+
   const items = [
-    { key: 'Société',         value: _params.societe.nom || '—' },
-    { key: 'Forme',           value: _params.societe.formeJuridique || '—' },
-    { key: 'Secteur',         value: SECTEURS[_params.societe.secteur] || '—' },
-    { key: 'Exercice',        value: _params.societe.anneeExercice },
-    { key: 'CA',              value: TRANCHES_CA[_params.taille.ca]?.label || '—' },
-    { key: 'Salariés',        value: TRANCHES_EMPLOYES[_params.taille.nbEmployes] || '—' },
-    { key: 'Résultat',        value: ORIENTATIONS[_params.finance.orientation]?.label || '—' },
-    { key: 'Régime TVA',      value: REGIMES_TVA[_params.finance.regimeTVA] || '—' },
+    { key: 'Société',    value: _params.societe.nom || '—' },
+    { key: 'Forme',      value: _params.societe.formeJuridique || '—' },
+    { key: 'Secteur',    value: SECTEURS[_params.societe.secteur] || '—' },
+    { key: 'Exercice',   value: exerciceAff },
+    { key: 'CA',         value: TRANCHES_CA[_params.taille.ca]?.label || '—' },
+    { key: 'Salariés',   value: TRANCHES_EMPLOYES[_params.taille.nbEmployes] || '—' },
+    { key: 'Résultat',   value: ORIENTATIONS[_params.finance.orientation]?.label || '—' },
+    { key: 'Régime TVA', value: REGIMES_TVA[_params.finance.regimeTVA] || '—' },
   ];
 
   grid.innerHTML = items.map(({ key, value }) => `
@@ -872,9 +1013,12 @@ function _buildRecap() {
  * @param {number} step
  */
 function _bindStepEvents(step) {
+  if (step === 1) {
+    // Mise à jour du badge durée en temps réel
+    document.getElementById('dateDebut')?.addEventListener('change', _updateDureeDisplay);
+    document.getElementById('dateFin')?.addEventListener('change', _updateDureeDisplay);
+  }
   if (step === 3) {
-    // Masquage dynamique du toggle Stocks si secteur change (ne peut pas changer ici,
-    // mais on applique immédiatement selon le secteur choisi à l'étape 1)
     _updateStocksVisibility();
   }
 }
@@ -900,12 +1044,12 @@ function _bindProgressClicks() {
 // HELPERS DOM
 // ============================================================
 
-/** Lit la valeur d'un input text/number */
+/** Lit la valeur d'un input text/number/date */
 function _getVal(name) {
   return document.getElementById(name)?.value ?? '';
 }
 
-/** Définit la valeur d'un input text/number */
+/** Définit la valeur d'un input text/number/date */
 function _setVal(name, value) {
   const el = document.getElementById(name);
   if (el) el.value = value ?? '';
