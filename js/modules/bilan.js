@@ -39,24 +39,12 @@ let _dataN1Figee     = null;
 // UTILITAIRES ÉDITION
 // ============================================================
 
-/**
- * Parse une saisie utilisateur en entier €.
- * @param {string} str
- * @returns {number|null}
- */
 function parseInput(str) {
   const clean = str.replace(/\s/g, '').replace('€', '').replace(',', '.').trim();
   const n = parseFloat(clean);
   return isNaN(n) ? null : Math.round(n);
 }
 
-/**
- * Active l'édition inline sur une cellule.
- * @param {HTMLElement} td
- * @param {string}      path
- * @param {number}      valeur
- * @param {Function}    onCommit
- */
 function activerEdition(td, path, valeur, onCommit) {
   if (td.querySelector('.cell-input')) return;
 
@@ -92,10 +80,6 @@ function activerEdition(td, path, valeur, onCommit) {
 // BANDEAU DÉSÉQUILIBRE
 // ============================================================
 
-/**
- * @param {number} ecart
- * @returns {string}
- */
 function buildDesequilibreBanner(ecart) {
   if (ecart === 0) return '';
   const signe  = ecart > 0 ? '+' : '';
@@ -116,15 +100,6 @@ function buildDesequilibreBanner(ecart) {
 // ACTIF — CONSTRUCTEURS DE LIGNES
 // ============================================================
 
-/**
- * @param {string}      libelle
- * @param {object}      p        { brut, amort, net }
- * @param {string}      basePath Chemin sans .brut/.amort/.net
- * @param {number|null} n1Net
- * @param {boolean}     indent
- * @param {string}      [hintKey] Clé dans HINTS
- * @returns {string}
- */
 function rowActif(libelle, p, basePath, n1Net = null, indent = true, hintKey = '') {
   const brutPath  = basePath + '.brut';
   const amortPath = basePath + '.amort';
@@ -243,15 +218,6 @@ function buildActif(bilan, n1) {
 // PASSIF — CONSTRUCTEURS DE LIGNES
 // ============================================================
 
-/**
- * @param {string}      libelle
- * @param {number}      montant
- * @param {string}      path
- * @param {number|null} n1
- * @param {boolean}     indent
- * @param {string}      [hintKey]
- * @returns {string}
- */
 function rowPassif(libelle, montant, path, n1 = null, indent = true, hintKey = '') {
   const locked = isLocked(path);
   const n1Cell = n1 !== null ? `<td class="col--n1 ${zeroCls(n1)}">${fmt(n1)}</td>` : '';
@@ -409,11 +375,31 @@ function bindSessionButtons() {
   }
 }
 
+/**
+ * Régénère uniquement les données N.
+ * Si un N-1 figé existe, il est préservé et réinjecté —
+ * Régénérer ne doit jamais toucher le snapshot N-1.
+ */
 function bindRegenerer() {
   const btn = document.getElementById('btnRegenerer');
   if (!btn) return;
   btn.addEventListener('click', () => {
     const freshData = generate(_currentParams);
+
+    // FIX bug2 : réinjecter le N-1 figé si présent — generate() l'aurait écrasé
+    if (_dataN1Figee) {
+      freshData.n1 = {
+        meta: {
+          anneeExercice:     _dataN1Figee.meta.anneeExercice,
+          dateDebut:         _dataN1Figee.meta.dateDebut,
+          dateFin:           _dataN1Figee.meta.dateFin,
+          dureeExerciceMois: _dataN1Figee.meta.dureeExerciceMois,
+        },
+        bilan:    _dataN1Figee.bilan,
+        resultat: _dataN1Figee.resultat,
+      };
+    }
+
     const { data, desequilibre } = reconcile(freshData, getOverrides(), _currentParams);
     _currentData = data;
     renderTab(_currentTab, desequilibre);
@@ -425,18 +411,32 @@ function bindRegenerer() {
 // ============================================================
 
 /**
- * Calcule les dates de l'exercice suivant à partir du meta courant.
+ * Calcule les dates de l'exercice N+1 depuis le meta BilanData.
  *
- * Règle :
- *   - L'exercice suivant commence toujours le lendemain de dateFin N.
- *   - Il se termine le 31/12 de son année de début (exercice plein standard).
- *   - dureeExerciceMois est recalculé.
+ * Source de vérité : meta.dateFin (champ string ISO 'YYYY-MM-DD').
+ * Fallback sur params.societe.dateFin si meta.dateFin absent/invalide
+ * (sessions générées avant que dateFin soit dans meta).
  *
- * @param {object} meta  BilanData.meta courant
- * @returns {{ dateDebut: string, dateFin: string, dureeExerciceMois: number, anneeExercice: number }}
+ * FIX bug1 : validate la date avant de l'utiliser — new Date(undefined)
+ * produit Invalid Date et corrompt tous les calculs suivants.
+ *
+ * @param {object} meta    BilanData.meta
+ * @param {object} [params] BilanParams — fallback si meta.dateFin absent
+ * @returns {{ dateDebut, dateFin, dureeExerciceMois, anneeExercice }}
  */
-function _calcDatesAnneeSuivante(meta) {
-  const finN = new Date(meta.dateFin);
+function _calcDatesAnneeSuivante(meta, params = null) {
+  // Résolution robuste de dateFin N
+  const rawFin = meta.dateFin ?? params?.societe?.dateFin;
+  const finN   = rawFin ? new Date(rawFin) : null;
+
+  if (!finN || isNaN(finN.getTime())) {
+    // Dernier recours : construire depuis anneeExercice
+    const annee = meta.anneeExercice ?? new Date().getFullYear();
+    const debut = `${annee + 1}-01-01`;
+    const fin   = `${annee + 1}-12-31`;
+    console.warn(`[Bilapp] _calcDatesAnneeSuivante : dateFin invalide (${rawFin}), fallback sur anneeExercice=${annee}`);
+    return { dateDebut: debut, dateFin: fin, dureeExerciceMois: 12, anneeExercice: annee + 1 };
+  }
 
   const debutN1 = new Date(finN);
   debutN1.setDate(debutN1.getDate() + 1);
@@ -459,13 +459,6 @@ function _calcDatesAnneeSuivante(meta) {
 // UTILITAIRE — AJUSTEMENT REPORT À NOUVEAU
 // ============================================================
 
-/**
- * Ajuste le report à nouveau et les réserves de l'année N+1
- * pour refléter l'affectation comptable du résultat N.
- *
- * @param {object} dataN1  BilanData N (le snapshot figé)
- * @param {object} dataN2  BilanData N+1 (fraîchement généré, muté en place)
- */
 function _ajusterReportANouveau(dataN1, dataN2) {
   const resultatN  = dataN1.resultat.resultatNet;
   const capitalN2  = dataN2.bilan.passif.capitauxPropres.capital;
@@ -480,8 +473,7 @@ function _ajusterReportANouveau(dataN1, dataN2) {
       Math.max(0, plafondReserveLegale - cp.reserveLegale)
     );
     cp.reserveLegale  = Math.round(cp.reserveLegale + dotationLegale);
-    const solde = resultatN - dotationLegale;
-    cp.reportANouveau = Math.round(cp.reportANouveau + solde);
+    cp.reportANouveau = Math.round(cp.reportANouveau + (resultatN - dotationLegale));
   }
 
   cp.total = Math.round(
@@ -512,7 +504,8 @@ function _showDialogueOrientation(dataN1Snap, onChoix) {
       ? `Bénéfice N : <strong class="is-positive">${resultatFmt}</strong>`
       : `Résultat N : <strong>0 €</strong>`;
 
-  const anneeN1Dates = _calcDatesAnneeSuivante(dataN1Snap.meta);
+  // FIX bug1 : passer _currentParams en fallback
+  const anneeN1Dates = _calcDatesAnneeSuivante(dataN1Snap.meta, _currentParams);
   const anneeLabel   = anneeN1Dates.dureeExerciceMois >= 11.5
     ? `Exercice ${anneeN1Dates.anneeExercice} (01/01 → 31/12)`
     : `Exercice ${anneeN1Dates.dateDebut} → ${anneeN1Dates.dateFin}`;
@@ -566,18 +559,14 @@ function _showDialogueOrientation(dataN1Snap, onChoix) {
   `;
 
   document.body.appendChild(overlay);
-
   overlay.querySelector('#dialogClose').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
-
   overlay.querySelectorAll('.annee-dialog__btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const orientation = btn.dataset.orientation;
       overlay.remove();
-      onChoix(orientation);
+      onChoix(btn.dataset.orientation);
     });
   });
-
   overlay.querySelector('.annee-dialog__btn--positif').focus();
 }
 
@@ -595,7 +584,8 @@ function bindAnneeSuivante() {
     _showDialogueOrientation(snapshot, (orientation) => {
       _dataN1Figee = snapshot;
 
-      const datesN1 = _calcDatesAnneeSuivante(_dataN1Figee.meta);
+      // FIX bug1 : passer _currentParams en fallback pour dateFin
+      const datesN1 = _calcDatesAnneeSuivante(_dataN1Figee.meta, _currentParams);
 
       const newParams = JSON.parse(JSON.stringify(_currentParams));
       newParams.societe.dateDebut         = datesN1.dateDebut;
@@ -624,7 +614,6 @@ function bindAnneeSuivante() {
       clearOverrides();
       const { data, desequilibre } = reconcile(freshData, getOverrides(), newParams);
       _currentData = data;
-
       renderTab('bilan', desequilibre);
     });
   });
@@ -706,8 +695,6 @@ function renderTab(tab, desequilibre = 0) {
   bindSessionButtons();
   bindRegenerer();
   bindAnneeSuivante();
-
-  // Tooltips hints — réinitialisés à chaque render
   destroyTooltips();
   initTooltips();
 
@@ -731,10 +718,6 @@ function renderTab(tab, desequilibre = 0) {
 // POINT D'ENTRÉE PUBLIC
 // ============================================================
 
-/**
- * @param {object} data    BilanData complet
- * @param {object} params  BilanParams
- */
 export function renderDocuments(data, params) {
   clearOverrides();
   _currentData   = data;
