@@ -172,14 +172,14 @@ Voir engine.js pour la structure complète.
 
 ## 8. Validateur (validator.js)
 
-| Règle | Contrôle |
-|-------|----------|
-| V01 | `actif.totalNet === passif.total` (±1€) |
-| V02 | `resultat.resultatNet === passif.capitauxPropres.resultat` |
-| V03 | `capital > 0` |
-| V04 | `resultatNet < 0` si orientation = 'negatif' |
-| V05 | `stocks.total.net === 0` si `hasStocks = false` |
-| V06 | `immobilise.total.net === 0` si `hasImmobilisations = false` |
+| Règle | Contrôle                                                     |
+| ----- | ------------------------------------------------------------ |
+| V01   | `actif.totalNet === passif.total` (±1€)                      |
+| V02   | `resultat.resultatNet === passif.capitauxPropres.resultat`   |
+| V03   | `capital > 0`                                                |
+| V04   | `resultatNet < 0` si orientation = 'negatif'                 |
+| V05   | `stocks.total.net === 0` si `hasStocks = false`              |
+| V06   | `immobilise.total.net === 0` si `hasImmobilisations = false` |
 
 Retour : `{ success: Boolean, errors: Array<{ code, message }> }`
 

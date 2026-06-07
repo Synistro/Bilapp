@@ -53,6 +53,10 @@
 
   #app                    { display: none !important; }
 
+  /* Hints — jamais imprimés */
+  .hint-icon,
+  .hint-bubble            { display: none !important; }
+
   /* ============================================================
      ZONE D'IMPRESSION
      ============================================================ */

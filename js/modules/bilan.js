@@ -13,7 +13,7 @@
 
 'use strict';
 import { buildLiasse }                           from './liasse.js';
-import { fmt, zeroCls, buildHeader, buildTabs } from '../utils/doc-helpers.js';
+import { fmt, zeroCls, buildHeader, buildTabs, hintIcon } from '../utils/doc-helpers.js';
 import { buildResultat }                         from './resultat.js';
 import { buildAnnexe }                           from './annexe.js';
 import { buildAnalyse }                          from './ratios.js';
@@ -23,6 +23,7 @@ import { exportDocument }                        from '../export/pdf.js';
 import { saveSession, loadSession }              from '../export/session.js';
 import { generate }                              from '../core/engine.js';
 import { ORIENTATIONS, TAUX }                   from '../core/constants.js';
+import { initTooltips, destroyTooltips }         from '../utils/tooltip.js';
 
 // ============================================================
 // ÉTAT DU MODULE
@@ -121,9 +122,10 @@ function buildDesequilibreBanner(ecart) {
  * @param {string}      basePath Chemin sans .brut/.amort/.net
  * @param {number|null} n1Net
  * @param {boolean}     indent
+ * @param {string}      [hintKey] Clé dans HINTS
  * @returns {string}
  */
-function rowActif(libelle, p, basePath, n1Net = null, indent = true) {
+function rowActif(libelle, p, basePath, n1Net = null, indent = true, hintKey = '') {
   const brutPath  = basePath + '.brut';
   const amortPath = basePath + '.amort';
   const netPath   = basePath + '.net';
@@ -134,7 +136,7 @@ function rowActif(libelle, p, basePath, n1Net = null, indent = true) {
 
   return `
     <tr class="${hasLock ? 'has-lock' : ''}">
-      <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}</td>
+      <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}${hintIcon(hintKey)}</td>
       <td class="is-editable ${lockedBrut  ? 'is-locked' : ''} ${zeroCls(p.brut)}"
           data-path="${brutPath}"  data-value="${p.brut}">${fmt(p.brut)}</td>
       <td class="is-editable ${lockedAmort ? 'is-locked' : ''} ${zeroCls(p.amort)}"
@@ -184,47 +186,47 @@ function buildActif(bilan, n1) {
         <tbody>
           <tr class="row--section"><td colspan="${cols}">Actif immobilisé</td></tr>
           <tr class="row--subsection"><td colspan="${cols}">Immobilisations incorporelles</td></tr>
-          ${rowActif('Frais d\'établissement',     a.immobilise.incorporel.fraisEtablissement, `${b}.immobilise.incorporel.fraisEtablissement`, n1v(x=>x.immobilise.incorporel.fraisEtablissement.net))}
-          ${rowActif('Frais de R&D',               a.immobilise.incorporel.fraisRD,            `${b}.immobilise.incorporel.fraisRD`,            n1v(x=>x.immobilise.incorporel.fraisRD.net))}
-          ${rowActif('Brevets, licences, marques', a.immobilise.incorporel.brevets,            `${b}.immobilise.incorporel.brevets`,            n1v(x=>x.immobilise.incorporel.brevets.net))}
-          ${rowActif('Fonds commercial',           a.immobilise.incorporel.fondsCommercial,    `${b}.immobilise.incorporel.fondsCommercial`,    n1v(x=>x.immobilise.incorporel.fondsCommercial.net))}
-          ${rowActif('Autres immos incorporelles', a.immobilise.incorporel.autresIncorporel,   `${b}.immobilise.incorporel.autresIncorporel`,   n1v(x=>x.immobilise.incorporel.autresIncorporel.net))}
+          ${rowActif('Frais d\'établissement',     a.immobilise.incorporel.fraisEtablissement, `${b}.immobilise.incorporel.fraisEtablissement`, n1v(x=>x.immobilise.incorporel.fraisEtablissement.net), true, 'fraisEtablissement')}
+          ${rowActif('Frais de R&D',               a.immobilise.incorporel.fraisRD,            `${b}.immobilise.incorporel.fraisRD`,            n1v(x=>x.immobilise.incorporel.fraisRD.net),            true, 'fraisRD')}
+          ${rowActif('Brevets, licences, marques', a.immobilise.incorporel.brevets,            `${b}.immobilise.incorporel.brevets`,            n1v(x=>x.immobilise.incorporel.brevets.net),            true, 'brevets')}
+          ${rowActif('Fonds commercial',           a.immobilise.incorporel.fondsCommercial,    `${b}.immobilise.incorporel.fondsCommercial`,    n1v(x=>x.immobilise.incorporel.fondsCommercial.net),    true, 'fondsCommercial')}
+          ${rowActif('Autres immos incorporelles', a.immobilise.incorporel.autresIncorporel,   `${b}.immobilise.incorporel.autresIncorporel`,   n1v(x=>x.immobilise.incorporel.autresIncorporel.net),   true, 'autresIncorporel')}
           ${rowActifSubtotal('Total incorporel',   a.immobilise.incorporel.total,              n1v(x=>x.immobilise.incorporel.total.net))}
 
           <tr class="row--subsection"><td colspan="${cols}">Immobilisations corporelles</td></tr>
-          ${rowActif('Terrains',                 a.immobilise.corporel.terrains,       `${b}.immobilise.corporel.terrains`,       n1v(x=>x.immobilise.corporel.terrains.net))}
-          ${rowActif('Constructions',            a.immobilise.corporel.constructions,  `${b}.immobilise.corporel.constructions`,  n1v(x=>x.immobilise.corporel.constructions.net))}
-          ${rowActif('Installations techniques', a.immobilise.corporel.installations,  `${b}.immobilise.corporel.installations`,  n1v(x=>x.immobilise.corporel.installations.net))}
-          ${rowActif('Autres immos corporelles', a.immobilise.corporel.autresCorporel, `${b}.immobilise.corporel.autresCorporel`, n1v(x=>x.immobilise.corporel.autresCorporel.net))}
+          ${rowActif('Terrains',                 a.immobilise.corporel.terrains,       `${b}.immobilise.corporel.terrains`,       n1v(x=>x.immobilise.corporel.terrains.net),       true, 'terrains')}
+          ${rowActif('Constructions',            a.immobilise.corporel.constructions,  `${b}.immobilise.corporel.constructions`,  n1v(x=>x.immobilise.corporel.constructions.net),  true, 'constructions')}
+          ${rowActif('Installations techniques', a.immobilise.corporel.installations,  `${b}.immobilise.corporel.installations`,  n1v(x=>x.immobilise.corporel.installations.net),  true, 'installations')}
+          ${rowActif('Autres immos corporelles', a.immobilise.corporel.autresCorporel, `${b}.immobilise.corporel.autresCorporel`, n1v(x=>x.immobilise.corporel.autresCorporel.net), true, 'autresCorporel')}
           ${rowActifSubtotal('Total corporel',   a.immobilise.corporel.total,          n1v(x=>x.immobilise.corporel.total.net))}
 
           <tr class="row--subsection"><td colspan="${cols}">Immobilisations financières</td></tr>
-          ${rowActif('Participations',           a.immobilise.financier.participations, `${b}.immobilise.financier.participations`, n1v(x=>x.immobilise.financier.participations.net))}
-          ${rowActif('Autres immos financières', a.immobilise.financier.autresFinancier,`${b}.immobilise.financier.autresFinancier`,n1v(x=>x.immobilise.financier.autresFinancier.net))}
+          ${rowActif('Participations',           a.immobilise.financier.participations, `${b}.immobilise.financier.participations`, n1v(x=>x.immobilise.financier.participations.net), true, 'participations')}
+          ${rowActif('Autres immos financières', a.immobilise.financier.autresFinancier,`${b}.immobilise.financier.autresFinancier`,n1v(x=>x.immobilise.financier.autresFinancier.net), true, 'autresFinancier')}
           ${rowActifSubtotal('Total financier',  a.immobilise.financier.total,          n1v(x=>x.immobilise.financier.total.net))}
           ${rowActifSubtotal('TOTAL ACTIF IMMOBILISÉ', a.immobilise.total,              n1v(x=>x.immobilise.total.net))}
 
           <tr class="row--section"><td colspan="${cols}">Actif circulant</td></tr>
           <tr class="row--subsection"><td colspan="${cols}">Stocks et en-cours</td></tr>
-          ${rowActif('Matières premières',     a.circulant.stocks.matieresPremières, `${b}.circulant.stocks.matieresPremières`, n1v(x=>x.circulant.stocks.matieresPremières.net))}
-          ${rowActif('En-cours de production', a.circulant.stocks.enCours,           `${b}.circulant.stocks.enCours`,           n1v(x=>x.circulant.stocks.enCours.net))}
-          ${rowActif('Produits finis',         a.circulant.stocks.produitsFinis,     `${b}.circulant.stocks.produitsFinis`,     n1v(x=>x.circulant.stocks.produitsFinis.net))}
-          ${rowActif('Marchandises',           a.circulant.stocks.marchandises,      `${b}.circulant.stocks.marchandises`,      n1v(x=>x.circulant.stocks.marchandises.net))}
+          ${rowActif('Matières premières',     a.circulant.stocks.matieresPremières, `${b}.circulant.stocks.matieresPremières`, n1v(x=>x.circulant.stocks.matieresPremières.net), true, 'matieresPremières')}
+          ${rowActif('En-cours de production', a.circulant.stocks.enCours,           `${b}.circulant.stocks.enCours`,           n1v(x=>x.circulant.stocks.enCours.net),           true, 'enCours')}
+          ${rowActif('Produits finis',         a.circulant.stocks.produitsFinis,     `${b}.circulant.stocks.produitsFinis`,     n1v(x=>x.circulant.stocks.produitsFinis.net),     true, 'produitsFinis')}
+          ${rowActif('Marchandises',           a.circulant.stocks.marchandises,      `${b}.circulant.stocks.marchandises`,      n1v(x=>x.circulant.stocks.marchandises.net),      true, 'marchandises')}
           ${rowActifSubtotal('Total stocks',   a.circulant.stocks.total,             n1v(x=>x.circulant.stocks.total.net))}
 
           <tr class="row--subsection"><td colspan="${cols}">Créances</td></tr>
-          ${rowActif('Clients et comptes rattachés', a.circulant.creances.clients,        `${b}.circulant.creances.clients`,        n1v(x=>x.circulant.creances.clients.net))}
-          ${rowActif('Autres créances',              a.circulant.creances.autresCreances, `${b}.circulant.creances.autresCreances`, n1v(x=>x.circulant.creances.autresCreances.net))}
+          ${rowActif('Clients et comptes rattachés', a.circulant.creances.clients,        `${b}.circulant.creances.clients`,        n1v(x=>x.circulant.creances.clients.net),        true, 'clients')}
+          ${rowActif('Autres créances',              a.circulant.creances.autresCreances, `${b}.circulant.creances.autresCreances`, n1v(x=>x.circulant.creances.autresCreances.net), true, 'autresCreances')}
           ${rowActifSubtotal('Total créances',       a.circulant.creances.total,          n1v(x=>x.circulant.creances.total.net))}
 
           <tr class="row--subsection"><td colspan="${cols}">Disponibilités</td></tr>
-          ${rowActif('Valeurs mobilières de placement', a.circulant.disponibilites.vmp,          `${b}.circulant.disponibilites.vmp`,          n1v(x=>x.circulant.disponibilites.vmp.net))}
-          ${rowActif('Banques, caisses',                a.circulant.disponibilites.banqueCaisse, `${b}.circulant.disponibilites.banqueCaisse`, n1v(x=>x.circulant.disponibilites.banqueCaisse.net))}
+          ${rowActif('Valeurs mobilières de placement', a.circulant.disponibilites.vmp,          `${b}.circulant.disponibilites.vmp`,          n1v(x=>x.circulant.disponibilites.vmp.net),          true, 'vmp')}
+          ${rowActif('Banques, caisses',                a.circulant.disponibilites.banqueCaisse, `${b}.circulant.disponibilites.banqueCaisse`, n1v(x=>x.circulant.disponibilites.banqueCaisse.net), true, 'banqueCaisse')}
           ${rowActifSubtotal('Total disponibilités',    a.circulant.disponibilites.total,        n1v(x=>x.circulant.disponibilites.total.net))}
           ${rowActifSubtotal('TOTAL ACTIF CIRCULANT',   a.circulant.total,                       n1v(x=>x.circulant.total.net))}
 
           <tr class="row--section"><td colspan="${cols}">Comptes de régularisation</td></tr>
-          ${rowActif('Charges constatées d\'avance', a.regularisation.chargesConstatees, `${b}.regularisation.chargesConstatees`, n1v(x=>x.regularisation.chargesConstatees.net), false)}
+          ${rowActif('Charges constatées d\'avance', a.regularisation.chargesConstatees, `${b}.regularisation.chargesConstatees`, n1v(x=>x.regularisation.chargesConstatees.net), false, 'chargesConstatees')}
 
           <tr class="row--total">
             <td>TOTAL ACTIF</td><td></td><td></td>
@@ -241,12 +243,21 @@ function buildActif(bilan, n1) {
 // PASSIF — CONSTRUCTEURS DE LIGNES
 // ============================================================
 
-function rowPassif(libelle, montant, path, n1 = null, indent = true) {
+/**
+ * @param {string}      libelle
+ * @param {number}      montant
+ * @param {string}      path
+ * @param {number|null} n1
+ * @param {boolean}     indent
+ * @param {string}      [hintKey]
+ * @returns {string}
+ */
+function rowPassif(libelle, montant, path, n1 = null, indent = true, hintKey = '') {
   const locked = isLocked(path);
   const n1Cell = n1 !== null ? `<td class="col--n1 ${zeroCls(n1)}">${fmt(n1)}</td>` : '';
   return `
     <tr class="${locked ? 'has-lock' : ''}">
-      <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}</td>
+      <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}${hintIcon(hintKey)}</td>
       <td class="is-editable ${locked ? 'is-locked' : ''} ${zeroCls(montant)}"
           data-path="${path}" data-value="${montant}">${fmt(montant)}</td>
       ${n1Cell}
@@ -284,28 +295,28 @@ function buildPassif(bilan, n1) {
         <thead><tr><th></th><th>Montant</th>${thN1}</tr></thead>
         <tbody>
           <tr class="row--section"><td colspan="${cols}">Capitaux propres</td></tr>
-          ${rowPassif('Capital social',          p.capitauxPropres.capital,        `${b}.capitauxPropres.capital`,        n1v(x=>x.capitauxPropres.capital))}
-          ${rowPassif('Primes d\'émission',      p.capitauxPropres.primesEmission, `${b}.capitauxPropres.primesEmission`, n1v(x=>x.capitauxPropres.primesEmission))}
-          ${rowPassif('Réserve légale',          p.capitauxPropres.reserveLegale,  `${b}.capitauxPropres.reserveLegale`,  n1v(x=>x.capitauxPropres.reserveLegale))}
-          ${rowPassif('Autres réserves',         p.capitauxPropres.autresReserves, `${b}.capitauxPropres.autresReserves`, n1v(x=>x.capitauxPropres.autresReserves))}
-          ${rowPassif('Report à nouveau',        p.capitauxPropres.reportANouveau, `${b}.capitauxPropres.reportANouveau`, n1v(x=>x.capitauxPropres.reportANouveau))}
-          ${rowPassif('Résultat de l\'exercice', p.capitauxPropres.resultat,       `${b}.capitauxPropres.resultat`,       n1v(x=>x.capitauxPropres.resultat))}
+          ${rowPassif('Capital social',          p.capitauxPropres.capital,        `${b}.capitauxPropres.capital`,        n1v(x=>x.capitauxPropres.capital),        true, 'capital')}
+          ${rowPassif('Primes d\'émission',      p.capitauxPropres.primesEmission, `${b}.capitauxPropres.primesEmission`, n1v(x=>x.capitauxPropres.primesEmission), true, 'primesEmission')}
+          ${rowPassif('Réserve légale',          p.capitauxPropres.reserveLegale,  `${b}.capitauxPropres.reserveLegale`,  n1v(x=>x.capitauxPropres.reserveLegale),  true, 'reserveLegale')}
+          ${rowPassif('Autres réserves',         p.capitauxPropres.autresReserves, `${b}.capitauxPropres.autresReserves`, n1v(x=>x.capitauxPropres.autresReserves), true, 'autresReserves')}
+          ${rowPassif('Report à nouveau',        p.capitauxPropres.reportANouveau, `${b}.capitauxPropres.reportANouveau`, n1v(x=>x.capitauxPropres.reportANouveau), true, 'reportANouveau')}
+          ${rowPassif('Résultat de l\'exercice', p.capitauxPropres.resultat,       `${b}.capitauxPropres.resultat`,       n1v(x=>x.capitauxPropres.resultat),       true, 'resultatExercice')}
           ${rowPassifSubtotal('TOTAL CAPITAUX PROPRES', p.capitauxPropres.total,   n1v(x=>x.capitauxPropres.total))}
 
           <tr class="row--section"><td colspan="${cols}">Provisions</td></tr>
-          ${rowPassif('Provisions pour risques', p.provisions.risques, `${b}.provisions.risques`, n1v(x=>x.provisions.risques))}
-          ${rowPassif('Provisions pour charges', p.provisions.charges, `${b}.provisions.charges`, n1v(x=>x.provisions.charges))}
+          ${rowPassif('Provisions pour risques', p.provisions.risques, `${b}.provisions.risques`, n1v(x=>x.provisions.risques), true, 'provisionsRisques')}
+          ${rowPassif('Provisions pour charges', p.provisions.charges, `${b}.provisions.charges`, n1v(x=>x.provisions.charges), true, 'provisionsCharges')}
           ${rowPassifSubtotal('TOTAL PROVISIONS', p.provisions.total,  n1v(x=>x.provisions.total))}
 
           <tr class="row--section"><td colspan="${cols}">Dettes</td></tr>
-          ${rowPassif('Emprunts et dettes financières',    p.dettes.emprunts,         `${b}.dettes.emprunts`,         n1v(x=>x.dettes.emprunts))}
-          ${rowPassif('Fournisseurs et comptes rattachés', p.dettes.fournisseurs,     `${b}.dettes.fournisseurs`,     n1v(x=>x.dettes.fournisseurs))}
-          ${rowPassif('Dettes fiscales et sociales',       p.dettes.fiscalesSociales, `${b}.dettes.fiscalesSociales`, n1v(x=>x.dettes.fiscalesSociales))}
-          ${rowPassif('Autres dettes',                     p.dettes.autresDettes,     `${b}.dettes.autresDettes`,     n1v(x=>x.dettes.autresDettes))}
+          ${rowPassif('Emprunts et dettes financières',    p.dettes.emprunts,         `${b}.dettes.emprunts`,         n1v(x=>x.dettes.emprunts),         true, 'emprunts')}
+          ${rowPassif('Fournisseurs et comptes rattachés', p.dettes.fournisseurs,     `${b}.dettes.fournisseurs`,     n1v(x=>x.dettes.fournisseurs),     true, 'fournisseurs')}
+          ${rowPassif('Dettes fiscales et sociales',       p.dettes.fiscalesSociales, `${b}.dettes.fiscalesSociales`, n1v(x=>x.dettes.fiscalesSociales), true, 'fiscalesSociales')}
+          ${rowPassif('Autres dettes',                     p.dettes.autresDettes,     `${b}.dettes.autresDettes`,     n1v(x=>x.dettes.autresDettes),     true, 'autresDettes')}
           ${rowPassifSubtotal('TOTAL DETTES', p.dettes.total, n1v(x=>x.dettes.total))}
 
           <tr class="row--section"><td colspan="${cols}">Comptes de régularisation</td></tr>
-          ${rowPassif('Produits constatés d\'avance', p.regularisation.produitsConstates, `${b}.regularisation.produitsConstates`, n1v(x=>x.regularisation.produitsConstates), false)}
+          ${rowPassif('Produits constatés d\'avance', p.regularisation.produitsConstates, `${b}.regularisation.produitsConstates`, n1v(x=>x.regularisation.produitsConstates), false, 'produitsConstates')}
 
           <tr class="row--total">
             <td>TOTAL PASSIF</td><td>${fmt(p.total)}</td>
@@ -421,21 +432,15 @@ function bindRegenerer() {
  *   - Il se termine le 31/12 de son année de début (exercice plein standard).
  *   - dureeExerciceMois est recalculé.
  *
- * Exemple :
- *   N  : 15/03/2024 → 31/12/2024 (9.5 mois)
- *   N+1: 01/01/2025 → 31/12/2025 (12 mois)  ← exercice plein
- *
  * @param {object} meta  BilanData.meta courant
  * @returns {{ dateDebut: string, dateFin: string, dureeExerciceMois: number, anneeExercice: number }}
  */
 function _calcDatesAnneeSuivante(meta) {
   const finN = new Date(meta.dateFin);
 
-  // Lendemain de la date de clôture N
   const debutN1 = new Date(finN);
   debutN1.setDate(debutN1.getDate() + 1);
 
-  // Fin = 31/12 de l'année de début N+1 (exercice plein)
   const anneeN1 = debutN1.getFullYear();
   const finN1   = new Date(`${anneeN1}-12-31`);
 
@@ -458,15 +463,6 @@ function _calcDatesAnneeSuivante(meta) {
  * Ajuste le report à nouveau et les réserves de l'année N+1
  * pour refléter l'affectation comptable du résultat N.
  *
- * Règles PCG :
- *   Résultat N déficitaire  → report à nouveau débiteur (négatif) en N+1
- *   Résultat N bénéficiaire → affectation minimale légale :
- *     5% en réserve légale (plafonné à 10% du capital)
- *     solde en report à nouveau créditeur (positif)
- *
- * On modifie directement le BilanData N+1 après génération.
- * La réconciliation recalcule l'équilibre ensuite.
- *
  * @param {object} dataN1  BilanData N (le snapshot figé)
  * @param {object} dataN2  BilanData N+1 (fraîchement généré, muté en place)
  */
@@ -476,36 +472,23 @@ function _ajusterReportANouveau(dataN1, dataN2) {
   const cp         = dataN2.bilan.passif.capitauxPropres;
 
   if (resultatN < 0) {
-    // Déficit N → report à nouveau débiteur en N+1
-    // Le déficit s'ajoute algébriquement au report à nouveau existant.
     cp.reportANouveau = Math.round(cp.reportANouveau + resultatN);
-
   } else if (resultatN > 0) {
-    // Bénéfice N → affectation minimale légale
-    // Réserve légale : 5% du bénéfice jusqu'au plafond (10% du capital)
     const plafondReserveLegale = Math.round(capitalN2 * TAUX.RESERVE_LEGALE_PLAFOND);
     const dotationLegale       = Math.min(
       Math.round(resultatN * TAUX.RESERVE_LEGALE_TAUX),
       Math.max(0, plafondReserveLegale - cp.reserveLegale)
     );
     cp.reserveLegale  = Math.round(cp.reserveLegale + dotationLegale);
-    // Solde → report à nouveau créditeur
     const solde = resultatN - dotationLegale;
     cp.reportANouveau = Math.round(cp.reportANouveau + solde);
   }
-  // Résultat exactement 0 → rien à affecter (cas pédagogique rare)
 
-  // Recalcule le total capitaux propres après ajustement
   cp.total = Math.round(
-    cp.capital +
-    cp.primesEmission +
-    cp.reserveLegale +
-    cp.autresReserves +
-    cp.reportANouveau +
-    cp.resultat
+    cp.capital + cp.primesEmission + cp.reserveLegale +
+    cp.autresReserves + cp.reportANouveau + cp.resultat
   );
 
-  // Propage au total passif (nécessaire pour l'équilibre avant reconcile)
   dataN2.bilan.passif.total = Math.round(
     cp.total +
     dataN2.bilan.passif.provisions.total +
@@ -518,15 +501,7 @@ function _ajusterReportANouveau(dataN1, dataN2) {
 // DIALOGUE ORIENTATION ANNÉE SUIVANTE
 // ============================================================
 
-/**
- * Affiche un dialogue modal inline pour choisir l'orientation de l'année N+1.
- * Aucun window.prompt — HTML injecté dans le DOM.
- *
- * @param {object}   dataN1Snap  Snapshot BilanData N (pour afficher le résultat N)
- * @param {Function} onChoix     Callback(orientation: string)
- */
 function _showDialogueOrientation(dataN1Snap, onChoix) {
-  // Retire tout dialogue existant
   document.getElementById('dialogueOrientation')?.remove();
 
   const resultatN     = dataN1Snap.resultat.resultatNet;
@@ -551,7 +526,6 @@ function _showDialogueOrientation(dataN1Snap, onChoix) {
         <h2 class="annee-dialog__title" id="dialogTitre">📅 Générer l'année suivante</h2>
         <button class="annee-dialog__close" id="dialogClose" aria-label="Annuler">✕</button>
       </div>
-
       <div class="annee-dialog__body">
         <div class="annee-dialog__info">
           <div class="annee-dialog__info-row">${resultatLabel}</div>
@@ -569,9 +543,7 @@ function _showDialogueOrientation(dataN1Snap, onChoix) {
             5% en réserve légale, solde en <strong>report à nouveau créditeur</strong>.
           </div>` : ''}
         </div>
-
         <p class="annee-dialog__question">Quel résultat pour l'exercice suivant ?</p>
-
         <div class="annee-dialog__orientations">
           <button class="annee-dialog__btn annee-dialog__btn--positif" data-orientation="positif">
             <span class="annee-dialog__btn-icon">📈</span>
@@ -595,11 +567,9 @@ function _showDialogueOrientation(dataN1Snap, onChoix) {
 
   document.body.appendChild(overlay);
 
-  // Fermeture
   overlay.querySelector('#dialogClose').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 
-  // Choix orientation
   overlay.querySelectorAll('.annee-dialog__btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const orientation = btn.dataset.orientation;
@@ -608,7 +578,6 @@ function _showDialogueOrientation(dataN1Snap, onChoix) {
     });
   });
 
-  // Focus trap minimal
   overlay.querySelector('.annee-dialog__btn--positif').focus();
 }
 
@@ -616,30 +585,18 @@ function _showDialogueOrientation(dataN1Snap, onChoix) {
 // BINDING BOUTON ANNÉE SUIVANTE
 // ============================================================
 
-/**
- * Flux complet :
- * 1. Snapshot profond des données N → N-1 figé
- * 2. Calcule les dates de l'exercice N+1 (plein si N était court)
- * 3. Ouvre le dialogue orientation
- * 4. Sur choix : génère N+1, injecte N-1 figé, ajuste report à nouveau,
- *    réconcilie, rend l'onglet bilan
- */
 function bindAnneeSuivante() {
   const btn = document.getElementById('btnAnneeSuivante');
   if (!btn) return;
 
   btn.addEventListener('click', () => {
-    // Snapshot profond des données N courantes → elles deviennent N-1
     const snapshot = JSON.parse(JSON.stringify(_currentData));
 
     _showDialogueOrientation(snapshot, (orientation) => {
-      // Fige le snapshot comme N-1
       _dataN1Figee = snapshot;
 
-      // Calcule les dates de l'exercice N+1
       const datesN1 = _calcDatesAnneeSuivante(_dataN1Figee.meta);
 
-      // Nouveaux params : exercice N+1 plein, orientation choisie, compareN1 forcé
       const newParams = JSON.parse(JSON.stringify(_currentParams));
       newParams.societe.dateDebut         = datesN1.dateDebut;
       newParams.societe.dateFin           = datesN1.dateFin;
@@ -649,10 +606,8 @@ function bindAnneeSuivante() {
       newParams.output.compareN1          = true;
       _currentParams = newParams;
 
-      // Génère les données N+1
       const freshData = generate(newParams);
 
-      // Injecte le N-1 figé dans la structure n1
       freshData.n1 = {
         meta: {
           anneeExercice:     _dataN1Figee.meta.anneeExercice,
@@ -664,10 +619,8 @@ function bindAnneeSuivante() {
         resultat: _dataN1Figee.resultat,
       };
 
-      // Ajuste le report à nouveau selon l'affectation du résultat N
       _ajusterReportANouveau(_dataN1Figee, freshData);
 
-      // Réconciliation — overrides réinitialisés (contexte différent)
       clearOverrides();
       const { data, desequilibre } = reconcile(freshData, getOverrides(), newParams);
       _currentData = data;
@@ -712,7 +665,6 @@ function renderTab(tab, desequilibre = 0) {
     content = buildAnalyse(_currentData, _currentParams);
   }
 
-  // Bouton Année suivante : masqué si déjà en mode N+1
   const btnAnneeSuivanteHtml = !_dataN1Figee
     ? `<button class="btn btn--secondary btn--sm" id="btnAnneeSuivante" title="Générer l'exercice suivant avec ce bilan comme N-1">📅 Année suivante</button>`
     : `<span class="annee-suivante-badge" title="N-1 figé : exercice ${_dataN1Figee.meta.anneeExercice}">
@@ -755,6 +707,10 @@ function renderTab(tab, desequilibre = 0) {
   bindRegenerer();
   bindAnneeSuivante();
 
+  // Tooltips hints — réinitialisés à chaque render
+  destroyTooltips();
+  initTooltips();
+
   app.querySelectorAll('.doc-tab').forEach(btn => {
     btn.addEventListener('click', () => renderTab(btn.dataset.tab, desequilibre));
   });
@@ -762,6 +718,7 @@ function renderTab(tab, desequilibre = 0) {
   app.querySelector('#btnRetour')?.addEventListener('click', () => {
     clearOverrides();
     _dataN1Figee = null;
+    destroyTooltips();
     window.location.reload();
   });
 

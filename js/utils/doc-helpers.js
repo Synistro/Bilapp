@@ -12,6 +12,8 @@
 
 'use strict';
 
+import { HINTS } from '../core/hints.js';
+
 // ============================================================
 // FORMATAGE DES MONTANTS
 // ============================================================
@@ -49,6 +51,28 @@ export function fmtResultat(n) {
  */
 export function zeroCls(n) {
   return n === 0 ? 'is-zero' : '';
+}
+
+// ============================================================
+// HINTS / TOOLTIPS
+// ============================================================
+
+/**
+ * Retourne un bouton icône hint si la clé existe dans HINTS, '' sinon.
+ * Le texte du hint est porté par data-hint (lu par tooltip.js).
+ *
+ * Rendu exemple :
+ *   <button class="hint-icon" data-hint="Ce que les clients doivent." aria-label="Aide : Clients" tabindex="-1">ⓘ</button>
+ *
+ * @param {string} key  Clé dans HINTS (ex. 'clients', 'ca')
+ * @returns {string}    HTML ou ''
+ */
+export function hintIcon(key) {
+  const text = HINTS[key];
+  if (!text) return '';
+  // Échappement minimal des guillemets pour l'attribut HTML
+  const safe = text.replace(/"/g, '&quot;');
+  return `<button class="hint-icon" data-hint="${safe}" aria-label="Aide" tabindex="-1">ⓘ</button>`;
 }
 
 // ============================================================
