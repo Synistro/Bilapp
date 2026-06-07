@@ -114,11 +114,10 @@ function calculerResultat(params, ca) {
   let resultatNet            = Math.round(resultatCourant + resultatExceptionnel - participation - impots);
 
   // Un résultat neutre à 0 exact n'est pas réaliste — plancher ±PLANCHER_RESULTAT_NEUTRE
-// Un résultat neutre à 0 exact n'est pas réaliste — on randomise dans [-plancher+1, -1] ∪ [1, plancher-1]
-if (orientation === 'neutre' && Math.abs(resultatNet) < PLANCHER_RESULTAT_NEUTRE) {
-  const signe = resultatNet >= 0 ? 1 : -1;
-  resultatNet = signe * randInt(1, PLANCHER_RESULTAT_NEUTRE - 1);
-}
+  if (orientation === 'neutre' && Math.abs(resultatNet) < PLANCHER_RESULTAT_NEUTRE) {
+    const signe = resultatNet >= 0 ? 1 : -1;
+    resultatNet = signe * randInt(1, PLANCHER_RESULTAT_NEUTRE - 1);
+  }
 
   return {
     produitsExploitation: { ca, productionStockee, subventions, autresProduits, total: totalProduitsExpl },
@@ -338,6 +337,9 @@ export function generate(params) {
       hasImmobilisations: params.finance.hasImmobilisations,
       orientation:        params.finance.orientation,
       mention:            MENTION_FICTIF,
+      // P9c — identité fictive générée à la création du formulaire
+      siret:              params.societe.siret   ?? null,
+      adresse:            params.societe.adresse ?? null,
     },
     bilan,
     resultat,

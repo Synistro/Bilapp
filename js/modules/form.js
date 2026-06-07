@@ -8,7 +8,7 @@
  *   1 — Identité société     (Q01-Q05)
  *   2 — Taille & structure   (Q06-Q08)
  *   3 — Paramètres financiers(Q09-Q14)
- *   4 — Documents à générer  (Q15-Q19)
+ *   4 — Documents à générer  (Q15-Q20)
  *
  * Exports :
  *   initForm(onSubmit)  — monte le formulaire dans #app, appelle onSubmit(BilanParams)
@@ -28,6 +28,8 @@ import {
   TVA_DEFAUT_PAR_TRANCHE,
 } from '../core/constants.js';
 
+import { genererIdentite } from '../utils/identite.js';
+
 // ============================================================
 // ÉTAT INTERNE DU FORMULAIRE
 // ============================================================
@@ -46,9 +48,11 @@ let _onSubmit = null;
 
 /**
  * Retourne un objet BilanParams vide avec les valeurs par défaut.
+ * L'identité (SIRET + adresse) est générée une seule fois à la création.
  * @returns {Object} BilanParams initialisé
  */
 function _defaultParams() {
+  const { siret, adresse } = genererIdentite();
   return {
     societe: {
       nom:            '',
@@ -56,6 +60,8 @@ function _defaultParams() {
       secteur:        '',
       activiteDetail: '',
       anneeExercice:  new Date().getFullYear() - 1,
+      siret,
+      adresse,
     },
     taille: {
       ca:         '',
@@ -76,6 +82,7 @@ function _defaultParams() {
       annexe:         false,
       liasseFiscale:  false,
       compareN1:      false,
+      analyse:        false,
     },
   };
 }
@@ -238,6 +245,7 @@ function _fillFormFromParams(step) {
     _setToggle('annexe',         _params.output.annexe);
     _setToggle('liasseFiscale',  _params.output.liasseFiscale);
     _setToggle('compareN1',      _params.output.compareN1);
+    _setToggle('analyse',        _params.output.analyse);
   }
 }
 
@@ -520,7 +528,7 @@ function _buildStep4() {
       <p class="step-header__desc">Sélectionnez les documents souhaités. Le bilan et le compte de résultat sont inclus par défaut.</p>
     </div>
 
-    <!-- Q15-Q19 — Documents -->
+    <!-- Q15-Q20 — Documents -->
     <div class="form-group">
       <div class="toggle-group">
 
@@ -575,6 +583,17 @@ function _buildStep4() {
           </div>
           <label class="toggle-switch">
             <input type="checkbox" id="compareN1" name="compareN1" />
+            <span class="toggle-switch__track"></span>
+          </label>
+        </div>
+
+        <div class="toggle-item">
+          <div class="toggle-item__text">
+            <span class="toggle-item__label">Analyse financière</span>
+            <span class="toggle-item__hint">FR, BFR, TN, SIG, CAF, ratios ROE/ROA</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="analyse" name="analyse" />
             <span class="toggle-switch__track"></span>
           </label>
         </div>
@@ -693,6 +712,7 @@ function _collectStep(step) {
     _params.societe.secteur        = _getRadio('secteur');
     _params.societe.activiteDetail = _getVal('activiteDetail');
     _params.societe.anneeExercice  = parseInt(_getVal('anneeExercice'), 10);
+    // siret et adresse conservés tels quels (générés à l'init)
   }
   if (step === 2) {
     _params.taille.ca         = _getRadio('ca');
@@ -718,6 +738,7 @@ function _collectStep(step) {
     _params.output.annexe         = _getToggle('annexe');
     _params.output.liasseFiscale  = _getToggle('liasseFiscale');
     _params.output.compareN1      = _getToggle('compareN1');
+    _params.output.analyse        = _getToggle('analyse');
   }
 }
 

@@ -16,6 +16,7 @@ import { buildLiasse }                           from './liasse.js';
 import { fmt, zeroCls, buildHeader, buildTabs } from '../utils/doc-helpers.js';
 import { buildResultat }                         from './resultat.js';
 import { buildAnnexe }                           from './annexe.js';
+import { buildAnalyse }                          from './ratios.js';
 import { setOverride, isLocked, getOverrides, clearOverrides, countOverrides } from '../core/overrides.js';
 import { reconcile }                             from '../core/reconcile.js';
 import { exportDocument }                        from '../export/pdf.js';
@@ -26,9 +27,11 @@ import { generate }                              from '../core/engine.js';
 // ÉTAT DU MODULE
 // ============================================================
 
-let _currentData   = null;
-let _currentParams = null;
-let _currentTab    = 'bilan';
+let _currentData     = null;
+let _currentParams   = null;
+let _currentTab      = 'bilan';
+/** BilanData N-1 figé lors d'une duplication Année suivante (P9d). */
+let _dataN1Figee     = null;
 
 // ============================================================
 // UTILITAIRES ÉDITION
@@ -325,7 +328,6 @@ function bindEdition() {
 
       activerEdition(td, path, valeur, (p, newVal) => {
         setOverride(p, newVal);
-        // _currentParams passé pour que reconcile respecte l'orientation d'origine
         const { data, desequilibre } = reconcile(_currentData, getOverrides(), _currentParams);
         _currentData = data;
         renderTab(_currentTab, desequilibre);
@@ -351,10 +353,6 @@ function updateLockCount() {
 // BINDING BOUTONS SESSION (save / load)
 // ============================================================
 
-/**
- * Attache les handlers des boutons 💾 et 📂 après chaque render.
- * L'input file caché est déclenché par le bouton 📂.
- */
 function bindSessionButtons() {
   const btnSave   = document.getElementById('btnSaveSession');
   const btnLoad   = document.getElementById('btnLoadSession');
@@ -362,7 +360,8 @@ function bindSessionButtons() {
 
   if (btnSave) {
     btnSave.addEventListener('click', () => {
-      saveSession(_currentData, _currentParams, getOverrides());
+      // Transmet dataN1Figee si présent (session P9d)
+      saveSession(_currentData, _currentParams, getOverrides(), _dataN1Figee);
     });
   }
 
@@ -372,24 +371,21 @@ function bindSessionButtons() {
     inputFile.addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
-
-      // Réinitialise l'input pour permettre le rechargement du même fichier
       inputFile.value = '';
 
       try {
         const payload = await loadSession(file);
 
-        // Restaure les overrides depuis le tableau de paires
         clearOverrides();
         for (const [path, val] of payload.overrides) {
           setOverride(path, val);
         }
 
-        // Restaure l'état applicatif
         _currentData   = payload.data;
         _currentParams = payload.params;
+        // Restaure le N-1 figé si présent (sessions v2.0)
+        _dataN1Figee   = payload.dataN1Figee ?? null;
 
-        // Re-render sur l'onglet par défaut du payload
         const defaultTab = payload.params.output?.bilan ? 'bilan'
           : payload.params.output?.compteResultat ? 'resultat'
           : 'annexe';
@@ -415,6 +411,52 @@ function bindRegenerer() {
 }
 
 // ============================================================
+// BINDING BOUTON ANNÉE SUIVANTE (P9d)
+// ============================================================
+
+/**
+ * Duplique vers l'année suivante :
+ * 1. Fige les données N courantes comme N-1 exact (snapshot profond)
+ * 2. Incrémente anneeExercice dans les params
+ * 3. Force compareN1 = true pour afficher la colonne N-1
+ * 4. Génère les nouvelles données N
+ * 5. Injecte les données N-1 figées dans data.n1 via la structure attendue
+ */
+function bindAnneeSuivante() {
+  const btn = document.getElementById('btnAnneeSuivante');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    // Snapshot profond des données N courantes → elles deviennent N-1
+    _dataN1Figee = JSON.parse(JSON.stringify(_currentData));
+
+    // Nouveaux params : année +1, compareN1 forcé
+    const newParams = JSON.parse(JSON.stringify(_currentParams));
+    newParams.societe.anneeExercice += 1;
+    newParams.output.compareN1       = true;
+    _currentParams = newParams;
+
+    // Génère les données N (nouvelles)
+    const freshData = generate(newParams);
+
+    // Injecte le snapshot N-1 figé dans la structure n1 du nouveau BilanData.
+    // On construit n1 à partir du snapshot : meta d'exercice + bilan + résultat.
+    freshData.n1 = {
+      meta:     { anneeExercice: _dataN1Figee.meta.anneeExercice },
+      bilan:    _dataN1Figee.bilan,
+      resultat: _dataN1Figee.resultat,
+    };
+
+    // Réconciliation (overrides existants réinitialisés — contexte différent)
+    clearOverrides();
+    const { data, desequilibre } = reconcile(freshData, getOverrides(), newParams);
+    _currentData = data;
+
+    renderTab('bilan', desequilibre);
+  });
+}
+
+// ============================================================
 // RENDER TAB
 // ============================================================
 
@@ -422,7 +464,14 @@ function renderTab(tab, desequilibre = 0) {
   _currentTab = tab;
   const app   = document.getElementById('app');
 
-  const titres = { bilan: 'Bilan comptable', resultat: 'Compte de résultat', annexe: 'Annexe comptable', liasse: 'Liasse fiscale' };
+  const titres = {
+    bilan:    'Bilan comptable',
+    resultat: 'Compte de résultat',
+    annexe:   'Annexe comptable',
+    liasse:   'Liasse fiscale',
+    analyse:  'Analyse financière',
+  };
+
   let content = '';
   if (tab === 'bilan') {
     content = `
@@ -438,7 +487,15 @@ function renderTab(tab, desequilibre = 0) {
     content = buildAnnexe(_currentData, _currentParams);
   } else if (tab === 'liasse') {
     content = buildLiasse(_currentData, _currentParams);
+  } else if (tab === 'analyse') {
+    content = buildAnalyse(_currentData, _currentParams);
   }
+
+  // Le bouton Année suivante est affiché seulement si on n'a pas déjà
+  // un N-1 figé provenant d'une duplication (évite les doublons infinis).
+  const btnAnneeSuivanteHtml = !_dataN1Figee
+    ? `<button class="btn btn--secondary btn--sm" id="btnAnneeSuivante" title="Générer l'exercice suivant avec ce bilan comme N-1">📅 Année suivante</button>`
+    : `<span class="annee-suivante-badge" title="N-1 issu de la duplication">📅 N-1 figé : ${_dataN1Figee.meta.anneeExercice}</span>`;
 
   app.innerHTML = `
     <header class="app-header">
@@ -453,6 +510,7 @@ function renderTab(tab, desequilibre = 0) {
         <div class="doc-actions__left">
           <button class="btn btn--secondary btn--sm" id="btnRetour">← Nouveau bilan</button>
           <button class="btn btn--secondary btn--sm" id="btnRegenerer">🔄 Régénérer</button>
+          ${btnAnneeSuivanteHtml}
         </div>
         <div class="doc-actions__right">
           <span class="lock-count" id="lockCount" style="display:none">
@@ -473,13 +531,15 @@ function renderTab(tab, desequilibre = 0) {
   bindEdition();
   bindSessionButtons();
   bindRegenerer();
-  
+  bindAnneeSuivante();
+
   app.querySelectorAll('.doc-tab').forEach(btn => {
     btn.addEventListener('click', () => renderTab(btn.dataset.tab, desequilibre));
   });
 
   app.querySelector('#btnRetour')?.addEventListener('click', () => {
     clearOverrides();
+    _dataN1Figee = null;
     window.location.reload();
   });
 
@@ -500,10 +560,12 @@ export function renderDocuments(data, params) {
   clearOverrides();
   _currentData   = data;
   _currentParams = params;
+  _dataN1Figee   = null;
   renderTab(
     params.output.bilan          ? 'bilan'    :
     params.output.compteResultat ? 'resultat' :
-    params.output.annexe         ? 'annexe'   : 'liasse',
+    params.output.annexe         ? 'annexe'   :
+    params.output.analyse        ? 'analyse'  : 'liasse',
     0
   );
 }

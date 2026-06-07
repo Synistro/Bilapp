@@ -56,12 +56,33 @@ export function zeroCls(n) {
 // ============================================================
 
 /**
+ * Formate un SIRET en blocs lisibles : XXX XXX XXX XXXXX
+ * @param {string} siret — 14 chiffres
+ * @returns {string}
+ */
+function fmtSIRET(siret) {
+  if (!siret || siret.length !== 14) return siret ?? '';
+  return `${siret.slice(0, 3)} ${siret.slice(3, 6)} ${siret.slice(6, 9)} ${siret.slice(9)}`;
+}
+
+/**
  * Construit l'en-tête commun à tous les documents (identité + mention).
+ * Affiche le SIRET et l'adresse si présents dans meta (P9c).
  * @param {object} meta   BilanData.meta
  * @param {string} titre  Titre du document affiché à droite
  * @returns {string}      HTML
  */
 export function buildHeader(meta, titre) {
+  // Ligne SIRET — affichée seulement si renseignée
+  const siretLine = meta.siret
+    ? `<span class="doc-header__meta-item">SIRET : <strong>${fmtSIRET(meta.siret)}</strong></span>`
+    : '';
+
+  // Ligne adresse — affichée seulement si renseignée
+  const adresseLine = meta.adresse
+    ? `<span class="doc-header__meta-item">${meta.adresse.numero} ${meta.adresse.voie}, ${meta.adresse.cp} ${meta.adresse.ville}</span>`
+    : '';
+
   return `
     <div class="doc-header">
       <div class="doc-header__left">
@@ -77,6 +98,8 @@ export function buildHeader(meta, titre) {
           <span class="doc-header__meta-item">
             TVA : <strong>${meta.regimeTVA.replace('_', ' ')}</strong>
           </span>
+          ${siretLine}
+          ${adresseLine}
         </div>
       </div>
       <div class="doc-header__right">
@@ -96,7 +119,7 @@ export function buildHeader(meta, titre) {
 
 /**
  * Construit les onglets de navigation entre documents.
- * @param {string} active   Onglet actif : 'bilan' | 'resultat' | 'annexe'
+ * @param {string} active   Onglet actif : 'bilan' | 'resultat' | 'annexe' | 'liasse' | 'analyse'
  * @param {object} output   BilanParams.output
  * @returns {string}        HTML
  */
@@ -106,6 +129,7 @@ export function buildTabs(active, output) {
   if (output.compteResultat) tabs.push({ id: 'resultat', label: 'Compte de résultat' });
   if (output.annexe)         tabs.push({ id: 'annexe',   label: 'Annexe' });
   if (output.liasseFiscale)  tabs.push({ id: 'liasse',   label: 'Liasse fiscale' });
+  if (output.analyse)        tabs.push({ id: 'analyse',  label: 'Analyse' });
 
   return `
     <div class="doc-tabs" role="tablist">

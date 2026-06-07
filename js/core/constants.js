@@ -7,6 +7,7 @@
  * - Fourchettes de CA par tranche
  * - Ratios sectoriels
  * - Labels UI du formulaire
+ * - Table de villes françaises (adresses fictives)
  *
  * RÈGLE : aucune valeur numérique ou libellé métier ne doit
  * être écrit en dur ailleurs que dans ce fichier.
@@ -258,6 +259,64 @@ export const VARIATION_MONTANTS = 0.15; // ±15%
 // ============================================================
 
 export const PLANCHER_RESULTAT_NEUTRE = 1_000; // €
+
+// ============================================================
+// VILLES FRANÇAISES — TABLE POUR ADRESSES FICTIVES
+// Utilisée par identite.js pour générer des adresses plausibles.
+// ============================================================
+
+export const VILLES_FR = [
+  { ville: 'Paris',            cp: '75001' },
+  { ville: 'Paris',            cp: '75008' },
+  { ville: 'Paris',            cp: '75015' },
+  { ville: 'Lyon',             cp: '69002' },
+  { ville: 'Lyon',             cp: '69008' },
+  { ville: 'Marseille',        cp: '13001' },
+  { ville: 'Marseille',        cp: '13008' },
+  { ville: 'Toulouse',         cp: '31000' },
+  { ville: 'Nice',             cp: '06000' },
+  { ville: 'Nantes',           cp: '44000' },
+  { ville: 'Strasbourg',       cp: '67000' },
+  { ville: 'Montpellier',      cp: '34000' },
+  { ville: 'Bordeaux',         cp: '33000' },
+  { ville: 'Lille',            cp: '59000' },
+  { ville: 'Rennes',           cp: '35000' },
+  { ville: 'Reims',            cp: '51100' },
+  { ville: 'Le Havre',         cp: '76600' },
+  { ville: 'Saint-Étienne',    cp: '42000' },
+  { ville: 'Toulon',           cp: '83000' },
+  { ville: 'Grenoble',         cp: '38000' },
+  { ville: 'Dijon',            cp: '21000' },
+  { ville: 'Angers',           cp: '49000' },
+  { ville: 'Nîmes',            cp: '30000' },
+  { ville: 'Villeurbanne',     cp: '69100' },
+  { ville: 'Le Mans',          cp: '72000' },
+  { ville: 'Aix-en-Provence',  cp: '13100' },
+  { ville: 'Clermont-Ferrand', cp: '63000' },
+  { ville: 'Tours',            cp: '37000' },
+  { ville: 'Amiens',           cp: '80000' },
+  { ville: 'Limoges',          cp: '87000' },
+  { ville: 'Metz',             cp: '57000' },
+  { ville: 'Brest',            cp: '29200' },
+  { ville: 'Nancy',            cp: '54000' },
+  { ville: 'Perpignan',        cp: '66000' },
+  { ville: 'Caen',             cp: '14000' },
+  { ville: 'Orléans',          cp: '45000' },
+  { ville: 'Rouen',            cp: '76000' },
+  { ville: 'Mulhouse',         cp: '68100' },
+  { ville: 'Besançon',         cp: '25000' },
+  { ville: 'Pau',              cp: '64000' },
+  { ville: 'Annecy',           cp: '74000' },
+  { ville: 'La Rochelle',      cp: '17000' },
+  { ville: 'Bayonne',          cp: '64100' },
+  { ville: 'Troyes',           cp: '10000' },
+  { ville: 'Poitiers',         cp: '86000' },
+  { ville: 'Valence',          cp: '26000' },
+  { ville: 'Dunkerque',        cp: '59140' },
+  { ville: 'Avignon',          cp: '84000' },
+  { ville: 'Chambéry',         cp: '73000' },
+  { ville: 'Colmar',           cp: '68000' },
+];
 
 // ============================================================
 // DURÉES D'AMORTISSEMENT PAR CATÉGORIE (PCG 2024)

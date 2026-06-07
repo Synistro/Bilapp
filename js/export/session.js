@@ -3,44 +3,49 @@
  * -------------------------------------------------------
  * Save/Load d'une session Bilapp au format JSON.
  *
- * Format de fichier :
+ * Format de fichier v2.0 :
  *   {
- *     version:   string,           // semver du format, ex. "1.0"
- *     timestamp: string,           // ISO 8601
- *     params:    BilanParams,      // paramètres du formulaire
- *     data:      BilanData,        // données calculées (snapshot)
- *     overrides: [string, number][]  // paires [path, valeur] issues de la Map
+ *     version:      string,             // "2.0"
+ *     timestamp:    string,             // ISO 8601
+ *     params:       BilanParams,        // paramètres du formulaire
+ *     data:         BilanData,          // données N calculées (snapshot)
+ *     overrides:    [string, number][]  // paires [path, valeur]
+ *     dataN1Figee:  BilanData | null    // données N-1 figées (P9d)
  *   }
  *
+ * Rétrocompatibilité : les sessions v1.0 sont acceptées (dataN1Figee absent → null).
+ *
  * Exports :
- *   saveSession(data, params, overrides)  — déclenche le téléchargement JSON
- *   loadSession(file)                     — lit un File, retourne Promise<SessionPayload>
+ *   saveSession(data, params, overrides, dataN1Figee?)
+ *   loadSession(file) → Promise<SessionPayload>
  */
 
 'use strict';
 
-/** Version du format de fichier — à incrémenter si structure change. */
-const SESSION_VERSION = '1.0';
+/** Version courante du format. Incrémenter si structure change. */
+const SESSION_VERSION = '2.0';
 
 // ============================================================
 // SAVE
 // ============================================================
 
 /**
- * Sérialise l'état courant et déclenche le téléchargement.
+ * Sérialise l'état courant et déclenche le téléchargement JSON.
  *
- * @param {object}          data       BilanData complet
- * @param {object}          params     BilanParams complet
- * @param {Map<string,number>} overrides  Registre des postes verrouillés
+ * @param {object}             data         BilanData N complet
+ * @param {object}             params       BilanParams complet
+ * @param {Map<string,number>} overrides    Registre des postes verrouillés
+ * @param {object|null}        [dataN1Figee] BilanData N-1 figé (P9d) — optionnel
  */
-export function saveSession(data, params, overrides) {
+export function saveSession(data, params, overrides, dataN1Figee = null) {
   const payload = {
-    version:   SESSION_VERSION,
-    timestamp: new Date().toISOString(),
+    version:     SESSION_VERSION,
+    timestamp:   new Date().toISOString(),
     params,
     data,
     // Map non sérialisable nativement — conversion en tableau de paires
-    overrides: [...overrides.entries()],
+    overrides:   [...overrides.entries()],
+    dataN1Figee: dataN1Figee ?? null,
   };
 
   const json     = JSON.stringify(payload, null, 2);
@@ -53,7 +58,6 @@ export function saveSession(data, params, overrides) {
   a.download = filename;
   a.click();
 
-  // Libération immédiate de l'URL objet
   URL.revokeObjectURL(url);
 }
 
@@ -65,8 +69,8 @@ export function saveSession(data, params, overrides) {
  * @returns {string}
  */
 function _buildFilename(params) {
-  const nom    = (params.societe?.nom ?? 'societe').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
-  const annee  = params.societe?.anneeExercice ?? new Date().getFullYear();
+  const nom   = (params.societe?.nom ?? 'societe').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+  const annee = params.societe?.anneeExercice ?? new Date().getFullYear();
   return `bilapp_${nom}_${annee}.json`;
 }
 
@@ -78,9 +82,10 @@ function _buildFilename(params) {
  * @typedef {object} SessionPayload
  * @property {string}             version
  * @property {string}             timestamp
- * @property {object}             params     BilanParams restauré
- * @property {object}             data       BilanData restauré
- * @property {[string, number][]} overrides  Paires [path, valeur]
+ * @property {object}             params       BilanParams restauré
+ * @property {object}             data         BilanData N restauré
+ * @property {[string, number][]} overrides    Paires [path, valeur]
+ * @property {object|null}        dataN1Figee  BilanData N-1 figé ou null
  */
 
 /**
@@ -89,7 +94,7 @@ function _buildFilename(params) {
  *
  * @param {File} file  Fichier sélectionné via <input type="file">
  * @returns {Promise<SessionPayload>}
- * @throws {Error} Si le JSON est invalide ou la version incompatible
+ * @throws {Error} Si le JSON est invalide ou la structure incohérente
  */
 export function loadSession(file) {
   return new Promise((resolve, reject) => {
@@ -113,6 +118,7 @@ export function loadSession(file) {
 
 /**
  * Vérifie la structure minimale du payload chargé.
+ * Tolère les sessions v1.0 (dataN1Figee absent).
  * @param {object} payload
  * @throws {Error}
  */
@@ -124,11 +130,14 @@ function _validatePayload(payload) {
     throw new Error('Champs obligatoires manquants (version, params, data).');
   }
   if (payload.version !== SESSION_VERSION) {
-    // Avertissement non bloquant — on charge quand même
-    console.warn(`[Bilapp session] Version ${payload.version} ≠ ${SESSION_VERSION} — compatibilité non garantie.`);
+    // Avertissement non bloquant — on charge les sessions v1.0
+    console.warn(`[Bilapp session] Version ${payload.version} ≠ ${SESSION_VERSION} — compatibilité assurée.`);
   }
   if (!Array.isArray(payload.overrides)) {
-    // Tolérance : overrides absent → tableau vide
     payload.overrides = [];
+  }
+  // Rétrocompatibilité v1.0 : dataN1Figee absent → null
+  if (!('dataN1Figee' in payload)) {
+    payload.dataN1Figee = null;
   }
 }
