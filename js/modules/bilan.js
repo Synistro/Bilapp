@@ -6,34 +6,30 @@
  *
  * Exports :
  *   renderDocuments(data, params) — point d'entrée principal
- *
- * RÈGLE : zéro calcul métier ici. Ce module transforme
- * BilanData en HTML et délègue la réconciliation à reconcile.js.
  */
 
 'use strict';
-import { buildLiasse }                           from './liasse.js';
+import { buildLiasse }                                    from './liasse.js';
 import { fmt, zeroCls, buildHeader, buildTabs, hintIcon } from '../utils/doc-helpers.js';
-import { buildResultat }                         from './resultat.js';
-import { buildAnnexe }                           from './annexe.js';
-import { buildAnalyse }                          from './ratios.js';
+import { buildResultat }                                  from './resultat.js';
+import { buildAnnexe }                                    from './annexe.js';
+import { buildAnalyse }                                   from './ratios.js';
 import { setOverride, isLocked, getOverrides, clearOverrides, countOverrides } from '../core/overrides.js';
-import { reconcile }                             from '../core/reconcile.js';
-import { exportDocument }                        from '../export/pdf.js';
-import { saveSession, loadSession }              from '../export/session.js';
-import { generate }                              from '../core/engine.js';
-import { ORIENTATIONS, TAUX }                   from '../core/constants.js';
-import { initTooltips, destroyTooltips }         from '../utils/tooltip.js';
+import { reconcile }                                      from '../core/reconcile.js';
+import { exportDocument }                                 from '../export/pdf.js';
+import { saveSession, loadSession }                       from '../export/session.js';
+import { generate }                                       from '../core/engine.js';
+import { TAUX }                                           from '../core/constants.js';
+import { initTooltips, destroyTooltips }                  from '../utils/tooltip.js';
 
 // ============================================================
 // ÉTAT DU MODULE
 // ============================================================
 
-let _currentData     = null;
-let _currentParams   = null;
-let _currentTab      = 'bilan';
-/** BilanData N-1 figé lors d'une duplication Année suivante. */
-let _dataN1Figee     = null;
+let _currentData   = null;
+let _currentParams = null;
+let _currentTab    = 'bilan';
+let _dataN1Figee   = null;
 
 // ============================================================
 // UTILITAIRES ÉDITION
@@ -47,28 +43,21 @@ function parseInput(str) {
 
 function activerEdition(td, path, valeur, onCommit) {
   if (td.querySelector('.cell-input')) return;
-
   const original = td.textContent.trim();
   const input    = document.createElement('input');
   input.type      = 'text';
   input.className = 'cell-input';
   input.value     = valeur === 0 ? '' : String(valeur);
   input.setAttribute('aria-label', `Modifier ${path}`);
-
   td.textContent = '';
   td.appendChild(input);
   input.focus();
   input.select();
-
   function commit() {
     const parsed = parseInput(input.value);
-    if (parsed !== null && parsed !== valeur) {
-      onCommit(path, parsed);
-    } else {
-      td.textContent = original;
-    }
+    if (parsed !== null && parsed !== valeur) { onCommit(path, parsed); }
+    else { td.textContent = original; }
   }
-
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter')  { e.preventDefault(); commit(); }
     if (e.key === 'Escape') { td.textContent = original; }
@@ -108,7 +97,6 @@ function rowActif(libelle, p, basePath, n1Net = null, indent = true, hintKey = '
   const lockedAmort = isLocked(amortPath);
   const hasLock     = lockedBrut || lockedAmort || isLocked(netPath);
   const n1Cell = n1Net !== null ? `<td class="col--n1 ${zeroCls(n1Net)}">${fmt(n1Net)}</td>` : '';
-
   return `
     <tr class="${hasLock ? 'has-lock' : ''}">
       <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}${hintIcon(hintKey)}</td>
@@ -303,7 +291,6 @@ function bindEdition() {
     td.addEventListener('click', () => {
       const path   = td.dataset.path;
       const valeur = parseInt(td.dataset.value, 10) || 0;
-
       activerEdition(td, path, valeur, (p, newVal) => {
         setOverride(p, newVal);
         const { data, desequilibre } = reconcile(_currentData, getOverrides(), _currentParams);
@@ -313,10 +300,6 @@ function bindEdition() {
     });
   });
 }
-
-// ============================================================
-// BARRE D'ACTIONS
-// ============================================================
 
 function updateLockCount() {
   const el = document.getElementById('lockCount');
@@ -328,7 +311,7 @@ function updateLockCount() {
 }
 
 // ============================================================
-// BINDING BOUTONS SESSION (save / load)
+// BINDING BOUTONS SESSION
 // ============================================================
 
 function bindSessionButtons() {
@@ -344,29 +327,20 @@ function bindSessionButtons() {
 
   if (btnLoad && inputFile) {
     btnLoad.addEventListener('click', () => inputFile.click());
-
     inputFile.addEventListener('change', async (e) => {
       const file = e.target.files?.[0];
       if (!file) return;
       inputFile.value = '';
-
       try {
         const payload = await loadSession(file);
-
         clearOverrides();
-        for (const [path, val] of payload.overrides) {
-          setOverride(path, val);
-        }
-
+        for (const [path, val] of payload.overrides) setOverride(path, val);
         _currentData   = payload.data;
         _currentParams = payload.params;
         _dataN1Figee   = payload.dataN1Figee ?? null;
-
         const defaultTab = payload.params.output?.bilan ? 'bilan'
-          : payload.params.output?.compteResultat ? 'resultat'
-          : 'annexe';
+          : payload.params.output?.compteResultat ? 'resultat' : 'annexe';
         renderTab(defaultTab, 0);
-
       } catch (err) {
         console.error(err.message);
         alert(`Impossible de charger la session :\n${err.message}`);
@@ -376,9 +350,8 @@ function bindSessionButtons() {
 }
 
 /**
- * Régénère uniquement les données N.
- * Si un N-1 figé existe, il est préservé et réinjecté —
- * Régénérer ne doit jamais toucher le snapshot N-1.
+ * Régénère les données N uniquement.
+ * Préserve le N-1 figé si présent — generate() ne doit jamais le toucher.
  */
 function bindRegenerer() {
   const btn = document.getElementById('btnRegenerer');
@@ -386,16 +359,11 @@ function bindRegenerer() {
   btn.addEventListener('click', () => {
     const freshData = generate(_currentParams);
 
-    // FIX bug2 : réinjecter le N-1 figé si présent — generate() l'aurait écrasé
+    // Réinjecter le N-1 figé — generate() l'aurait écrasé si compareN1=true
     if (_dataN1Figee) {
       freshData.n1 = {
-        meta: {
-          anneeExercice:     _dataN1Figee.meta.anneeExercice,
-          dateDebut:         _dataN1Figee.meta.dateDebut,
-          dateFin:           _dataN1Figee.meta.dateFin,
-          dureeExerciceMois: _dataN1Figee.meta.dureeExerciceMois,
-        },
-        bilan:    _dataN1Figee.bilan,
+        meta:    { anneeExercice: _dataN1Figee.meta.anneeExercice, dateDebut: _dataN1Figee.meta.dateDebut, dateFin: _dataN1Figee.meta.dateFin, dureeExerciceMois: _dataN1Figee.meta.dureeExerciceMois },
+        bilan:   _dataN1Figee.bilan,
         resultat: _dataN1Figee.resultat,
       };
     }
@@ -411,45 +379,55 @@ function bindRegenerer() {
 // ============================================================
 
 /**
- * Calcule les dates de l'exercice N+1 depuis le meta BilanData.
+ * Calcule les dates de l'exercice N+1.
  *
- * Source de vérité : meta.dateFin (champ string ISO 'YYYY-MM-DD').
- * Fallback sur params.societe.dateFin si meta.dateFin absent/invalide
- * (sessions générées avant que dateFin soit dans meta).
+ * FIX timezone : new Date('YYYY-MM-DD') parse en UTC → décalage en heure locale.
+ * On parse manuellement pour rester 100% local.
  *
- * FIX bug1 : validate la date avant de l'utiliser — new Date(undefined)
- * produit Invalid Date et corrompt tous les calculs suivants.
+ * FIX robustesse : fallback sur params.societe.dateFin si meta.dateFin absent.
  *
- * @param {object} meta    BilanData.meta
- * @param {object} [params] BilanParams — fallback si meta.dateFin absent
+ * @param {object} meta     BilanData.meta
+ * @param {object} [params] BilanParams — fallback dateFin
  * @returns {{ dateDebut, dateFin, dureeExerciceMois, anneeExercice }}
  */
 function _calcDatesAnneeSuivante(meta, params = null) {
-  // Résolution robuste de dateFin N
   const rawFin = meta.dateFin ?? params?.societe?.dateFin;
-  const finN   = rawFin ? new Date(rawFin) : null;
 
-  if (!finN || isNaN(finN.getTime())) {
-    // Dernier recours : construire depuis anneeExercice
-    const annee = meta.anneeExercice ?? new Date().getFullYear();
-    const debut = `${annee + 1}-01-01`;
-    const fin   = `${annee + 1}-12-31`;
-    console.warn(`[Bilapp] _calcDatesAnneeSuivante : dateFin invalide (${rawFin}), fallback sur anneeExercice=${annee}`);
-    return { dateDebut: debut, dateFin: fin, dureeExerciceMois: 12, anneeExercice: annee + 1 };
+  // Parse 'YYYY-MM-DD' en date locale (évite le bug UTC)
+  function parseLocal(iso) {
+    if (!iso || typeof iso !== 'string') return null;
+    const [y, m, d] = iso.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    const dt = new Date(y, m - 1, d);
+    return isNaN(dt.getTime()) ? null : dt;
   }
 
-  const debutN1 = new Date(finN);
-  debutN1.setDate(debutN1.getDate() + 1);
+  // Formater une Date locale en 'YYYY-MM-DD' (évite toISOString qui repasse en UTC)
+  function fmtISO(dt) {
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
 
+  const finN = parseLocal(rawFin);
+  if (!finN) {
+    const annee = meta.anneeExercice ?? new Date().getFullYear();
+    console.warn(`[Bilapp] _calcDatesAnneeSuivante : dateFin invalide (${rawFin}), fallback anneeExercice=${annee}`);
+    return { dateDebut: `${annee + 1}-01-01`, dateFin: `${annee + 1}-12-31`, dureeExerciceMois: 12, anneeExercice: annee + 1 };
+  }
+
+  // Lendemain de la clôture N, tout en local
+  const debutN1 = new Date(finN.getFullYear(), finN.getMonth(), finN.getDate() + 1);
   const anneeN1 = debutN1.getFullYear();
-  const finN1   = new Date(`${anneeN1}-12-31`);
+  const finN1   = new Date(anneeN1, 11, 31); // 31/12 local
 
   const msParMois     = 1000 * 60 * 60 * 24 * (365.25 / 12);
   const dureeExercice = Math.round(((finN1 - debutN1) / msParMois) * 100) / 100;
 
   return {
-    dateDebut:         debutN1.toISOString().slice(0, 10),
-    dateFin:           finN1.toISOString().slice(0, 10),
+    dateDebut:         fmtISO(debutN1),
+    dateFin:           fmtISO(finN1),
     dureeExerciceMois: dureeExercice,
     anneeExercice:     anneeN1,
   };
@@ -460,33 +438,20 @@ function _calcDatesAnneeSuivante(meta, params = null) {
 // ============================================================
 
 function _ajusterReportANouveau(dataN1, dataN2) {
-  const resultatN  = dataN1.resultat.resultatNet;
-  const capitalN2  = dataN2.bilan.passif.capitauxPropres.capital;
-  const cp         = dataN2.bilan.passif.capitauxPropres;
+  const resultatN = dataN1.resultat.resultatNet;
+  const cp        = dataN2.bilan.passif.capitauxPropres;
 
   if (resultatN < 0) {
     cp.reportANouveau = Math.round(cp.reportANouveau + resultatN);
   } else if (resultatN > 0) {
-    const plafondReserveLegale = Math.round(capitalN2 * TAUX.RESERVE_LEGALE_PLAFOND);
-    const dotationLegale       = Math.min(
-      Math.round(resultatN * TAUX.RESERVE_LEGALE_TAUX),
-      Math.max(0, plafondReserveLegale - cp.reserveLegale)
-    );
-    cp.reserveLegale  = Math.round(cp.reserveLegale + dotationLegale);
-    cp.reportANouveau = Math.round(cp.reportANouveau + (resultatN - dotationLegale));
+    const plafond        = Math.round(dataN2.bilan.passif.capitauxPropres.capital * TAUX.RESERVE_LEGALE_PLAFOND);
+    const dotation       = Math.min(Math.round(resultatN * TAUX.RESERVE_LEGALE_TAUX), Math.max(0, plafond - cp.reserveLegale));
+    cp.reserveLegale     = Math.round(cp.reserveLegale + dotation);
+    cp.reportANouveau    = Math.round(cp.reportANouveau + (resultatN - dotation));
   }
 
-  cp.total = Math.round(
-    cp.capital + cp.primesEmission + cp.reserveLegale +
-    cp.autresReserves + cp.reportANouveau + cp.resultat
-  );
-
-  dataN2.bilan.passif.total = Math.round(
-    cp.total +
-    dataN2.bilan.passif.provisions.total +
-    dataN2.bilan.passif.dettes.total +
-    dataN2.bilan.passif.regularisation.total
-  );
+  cp.total = Math.round(cp.capital + cp.primesEmission + cp.reserveLegale + cp.autresReserves + cp.reportANouveau + cp.resultat);
+  dataN2.bilan.passif.total = Math.round(cp.total + dataN2.bilan.passif.provisions.total + dataN2.bilan.passif.dettes.total + dataN2.bilan.passif.regularisation.total);
 }
 
 // ============================================================
@@ -496,15 +461,14 @@ function _ajusterReportANouveau(dataN1, dataN2) {
 function _showDialogueOrientation(dataN1Snap, onChoix) {
   document.getElementById('dialogueOrientation')?.remove();
 
-  const resultatN     = dataN1Snap.resultat.resultatNet;
-  const resultatFmt   = Math.abs(resultatN).toLocaleString('fr-FR') + ' €';
+  const resultatN   = dataN1Snap.resultat.resultatNet;
+  const resultatFmt = Math.abs(resultatN).toLocaleString('fr-FR') + ' €';
   const resultatLabel = resultatN < 0
     ? `Déficit N : <strong class="is-negative">−${resultatFmt}</strong>`
     : resultatN > 0
       ? `Bénéfice N : <strong class="is-positive">${resultatFmt}</strong>`
       : `Résultat N : <strong>0 €</strong>`;
 
-  // FIX bug1 : passer _currentParams en fallback
   const anneeN1Dates = _calcDatesAnneeSuivante(dataN1Snap.meta, _currentParams);
   const anneeLabel   = anneeN1Dates.dureeExerciceMois >= 11.5
     ? `Exercice ${anneeN1Dates.anneeExercice} (01/01 → 31/12)`
@@ -522,19 +486,9 @@ function _showDialogueOrientation(dataN1Snap, onChoix) {
       <div class="annee-dialog__body">
         <div class="annee-dialog__info">
           <div class="annee-dialog__info-row">${resultatLabel}</div>
-          <div class="annee-dialog__info-row">
-            <span>Prochain exercice :</span>
-            <strong>${anneeLabel}</strong>
-          </div>
-          ${resultatN < 0 ? `
-          <div class="annee-dialog__note">
-            ℹ️ Le déficit de l'année N sera reporté en <strong>report à nouveau débiteur</strong>
-            dans les capitaux propres de l'année suivante.
-          </div>` : resultatN > 0 ? `
-          <div class="annee-dialog__note">
-            ℹ️ Le bénéfice de l'année N sera affecté selon les règles légales :
-            5% en réserve légale, solde en <strong>report à nouveau créditeur</strong>.
-          </div>` : ''}
+          <div class="annee-dialog__info-row"><span>Prochain exercice :</span><strong>${anneeLabel}</strong></div>
+          ${resultatN < 0 ? `<div class="annee-dialog__note">ℹ️ Le déficit sera reporté en <strong>report à nouveau débiteur</strong>.</div>`
+            : resultatN > 0 ? `<div class="annee-dialog__note">ℹ️ Le bénéfice sera affecté : 5% réserve légale, solde en <strong>report à nouveau créditeur</strong>.</div>` : ''}
         </div>
         <p class="annee-dialog__question">Quel résultat pour l'exercice suivant ?</p>
         <div class="annee-dialog__orientations">
@@ -562,10 +516,7 @@ function _showDialogueOrientation(dataN1Snap, onChoix) {
   overlay.querySelector('#dialogClose').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
   overlay.querySelectorAll('.annee-dialog__btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      overlay.remove();
-      onChoix(btn.dataset.orientation);
-    });
+    btn.addEventListener('click', () => { overlay.remove(); onChoix(btn.dataset.orientation); });
   });
   overlay.querySelector('.annee-dialog__btn--positif').focus();
 }
@@ -584,7 +535,6 @@ function bindAnneeSuivante() {
     _showDialogueOrientation(snapshot, (orientation) => {
       _dataN1Figee = snapshot;
 
-      // FIX bug1 : passer _currentParams en fallback pour dateFin
       const datesN1 = _calcDatesAnneeSuivante(_dataN1Figee.meta, _currentParams);
 
       const newParams = JSON.parse(JSON.stringify(_currentParams));
@@ -594,18 +544,19 @@ function bindAnneeSuivante() {
       newParams.societe.anneeExercice     = datesN1.anneeExercice;
       newParams.finance.orientation       = orientation;
       newParams.output.compareN1          = true;
+
+      // Ancre CA : le moteur utilisera le CA réel N comme base (±15%)
+      // au lieu de tirer aléatoirement dans la fourchette de tranche
+      newParams.societe.caBaseN = _dataN1Figee.resultat.produitsExploitation.ca;
+
       _currentParams = newParams;
 
       const freshData = generate(newParams);
 
+      // Injecter le snapshot N-1 figé
       freshData.n1 = {
-        meta: {
-          anneeExercice:     _dataN1Figee.meta.anneeExercice,
-          dateDebut:         _dataN1Figee.meta.dateDebut,
-          dateFin:           _dataN1Figee.meta.dateFin,
-          dureeExerciceMois: _dataN1Figee.meta.dureeExerciceMois,
-        },
-        bilan:    _dataN1Figee.bilan,
+        meta:    { anneeExercice: _dataN1Figee.meta.anneeExercice, dateDebut: _dataN1Figee.meta.dateDebut, dateFin: _dataN1Figee.meta.dateFin, dureeExerciceMois: _dataN1Figee.meta.dureeExerciceMois },
+        bilan:   _dataN1Figee.bilan,
         resultat: _dataN1Figee.resultat,
       };
 
@@ -627,13 +578,7 @@ function renderTab(tab, desequilibre = 0) {
   _currentTab = tab;
   const app   = document.getElementById('app');
 
-  const titres = {
-    bilan:    'Bilan comptable',
-    resultat: 'Compte de résultat',
-    annexe:   'Annexe comptable',
-    liasse:   'Liasse fiscale',
-    analyse:  'Analyse financière',
-  };
+  const titres = { bilan: 'Bilan comptable', resultat: 'Compte de résultat', annexe: 'Annexe comptable', liasse: 'Liasse fiscale', analyse: 'Analyse financière' };
 
   let content = '';
   if (tab === 'bilan') {
@@ -656,9 +601,7 @@ function renderTab(tab, desequilibre = 0) {
 
   const btnAnneeSuivanteHtml = !_dataN1Figee
     ? `<button class="btn btn--secondary btn--sm" id="btnAnneeSuivante" title="Générer l'exercice suivant avec ce bilan comme N-1">📅 Année suivante</button>`
-    : `<span class="annee-suivante-badge" title="N-1 figé : exercice ${_dataN1Figee.meta.anneeExercice}">
-         📅 N-1 figé : ${_dataN1Figee.meta.anneeExercice}
-       </span>`;
+    : `<span class="annee-suivante-badge" title="N-1 figé : exercice ${_dataN1Figee.meta.anneeExercice}">📅 N-1 figé : ${_dataN1Figee.meta.anneeExercice}</span>`;
 
   app.innerHTML = `
     <header class="app-header">
@@ -676,9 +619,7 @@ function renderTab(tab, desequilibre = 0) {
           ${btnAnneeSuivanteHtml}
         </div>
         <div class="doc-actions__right">
-          <span class="lock-count" id="lockCount" style="display:none">
-            🔒 <span class="lock-count__badge">0</span> verrouillé(s)
-          </span>
+          <span class="lock-count" id="lockCount" style="display:none">🔒 <span class="lock-count__badge">0</span> verrouillé(s)</span>
           <button class="btn btn--ghost btn--sm" id="btnSaveSession" title="Sauvegarder la session">💾 Sauvegarder</button>
           <button class="btn btn--ghost btn--sm" id="btnLoadSession" title="Charger une session">📂 Charger</button>
           <input type="file" id="inputLoadSession" accept=".json" style="display:none" aria-hidden="true">
@@ -701,17 +642,10 @@ function renderTab(tab, desequilibre = 0) {
   app.querySelectorAll('.doc-tab').forEach(btn => {
     btn.addEventListener('click', () => renderTab(btn.dataset.tab, desequilibre));
   });
-
   app.querySelector('#btnRetour')?.addEventListener('click', () => {
-    clearOverrides();
-    _dataN1Figee = null;
-    destroyTooltips();
-    window.location.reload();
+    clearOverrides(); _dataN1Figee = null; destroyTooltips(); window.location.reload();
   });
-
-  app.querySelector('#btnPrint')?.addEventListener('click', () => {
-    exportDocument('#docContent');
-  });
+  app.querySelector('#btnPrint')?.addEventListener('click', () => exportDocument('#docContent'));
 }
 
 // ============================================================

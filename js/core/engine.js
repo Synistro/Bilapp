@@ -69,7 +69,6 @@ function calculerResultat(params, ca) {
   const { orientation } = params.finance;
   const ratios          = RATIOS_SECTORIELS[secteur];
 
-  // Fallback rétrocompat : niveauStocks absent → dériver de hasStocks
   const niveauStocks = params.finance.niveauStocks
     ?? (params.finance.hasStocks ? 'marchandises' : 'off');
 
@@ -117,7 +116,6 @@ function calculerResultat(params, ca) {
   const resultatCourant      = Math.round(resultatExploitation + resultatFinancier);
   let resultatNet            = Math.round(resultatCourant + resultatExceptionnel - participation - impots);
 
-  // Un résultat neutre à 0 exact n'est pas réaliste — plancher ±PLANCHER_RESULTAT_NEUTRE
   if (orientation === 'neutre' && Math.abs(resultatNet) < PLANCHER_RESULTAT_NEUTRE) {
     const signe = resultatNet >= 0 ? 1 : -1;
     resultatNet = signe * randInt(1, PLANCHER_RESULTAT_NEUTRE - 1);
@@ -136,23 +134,7 @@ function calculerResultat(params, ca) {
 // ACTIF IMMOBILISÉ
 // ============================================================
 
-/**
- * Calcule l'actif immobilisé selon le niveau demandé.
- *
- * Logique par niveau :
- *   off   → tout à zéro
- *   leger → incorporel=zéro, terrains=zéro, constructions=zéro, installations+autresCorporel générés
- *   mixte → incorporel généré (fraisEtab+brevets+fonds), terrains=zéro, constructions légères, installations+autresCorporel
- *   lourd → tout généré (identique à l'ancien hasImmobilisations=true secteur industrie)
- *
- * Fallback rétrocompat : si niveauImmos absent, dériver de hasImmobilisations.
- *
- * @param {object} params BilanParams
- * @param {number} ca     Chiffre d'affaires calculé
- * @returns {object}      Actif immobilisé structuré
- */
 function calculerActifImmobilise(params, ca) {
-  // Fallback rétrocompat : niveauImmos absent → dériver de hasImmobilisations
   const niveauImmos = params.finance.niveauImmos
     ?? (params.finance.hasImmobilisations ? 'mixte' : 'off');
 
@@ -169,8 +151,6 @@ function calculerActifImmobilise(params, ca) {
 
   const { secteur } = params.societe;
 
-  // --- INCORPOREL ---
-  // leger : rien d'incorporel (startup légère, pas d'actifs immatériels)
   const genIncorporel = niveauImmos !== 'leger';
   const fraisEtablissement = genIncorporel ? poste(varier(ca * randFloat(0.00, 0.01)), varier(ca * randFloat(0.00, 0.005))) : zero;
   const fraisRD            = (genIncorporel && secteur !== 'commerce')
@@ -180,10 +160,6 @@ function calculerActifImmobilise(params, ca) {
   const autresIncorporel   = genIncorporel ? poste(varier(ca * randFloat(0.00, 0.01))) : zero;
   const totalIncorporel    = totalPostes(fraisEtablissement, fraisRD, brevets, fondsCommercial, autresIncorporel);
 
-  // --- CORPOREL ---
-  // leger : pas de terrains ni constructions, uniquement installations + autresCorporel
-  // mixte : constructions légères (facteur réduit), pas de terrains
-  // lourd : tout (terrains + constructions lourdes selon secteur)
   let terrains, constructions;
   if (niveauImmos === 'leger') {
     terrains      = zero;
@@ -192,7 +168,6 @@ function calculerActifImmobilise(params, ca) {
     terrains      = zero;
     constructions = poste(varier(ca * randFloat(0.05, 0.15)), varier(ca * randFloat(0.02, 0.08)));
   } else {
-    // lourd
     const facteurCorporel = secteur === 'industrie' ? 0.6 : 0.3;
     terrains      = secteur === 'industrie' ? poste(varier(ca * randFloat(0.05, 0.15))) : zero;
     constructions = poste(varier(ca * facteurCorporel * randFloat(0.10, 0.30)), varier(ca * facteurCorporel * randFloat(0.05, 0.15)));
@@ -202,7 +177,6 @@ function calculerActifImmobilise(params, ca) {
   const autresCorporel = poste(varier(ca * randFloat(0.02, 0.08)), varier(ca * randFloat(0.01, 0.05)));
   const totalCorporel  = totalPostes(terrains, constructions, installations, autresCorporel);
 
-  // --- FINANCIER ---
   const participations  = params.finance.hasInternational ? poste(varier(ca * randFloat(0.02, 0.10))) : zero;
   const autresFinancier = poste(varier(ca * randFloat(0.00, 0.02)));
   const totalFinancier  = totalPostes(participations, autresFinancier);
@@ -221,28 +195,10 @@ function calculerActifImmobilise(params, ca) {
 // ACTIF CIRCULANT
 // ============================================================
 
-/**
- * Calcule l'actif circulant selon le niveau de stocks demandé.
- *
- * Logique par niveau :
- *   off             → tout à zéro
- *   marchandises    → compte 37 uniquement
- *   marchandises_mp → comptes 37 + 31
- *   complet         → MP + en-cours + produits finis + marchandises
- *
- * Fallback rétrocompat : si niveauStocks absent, dériver de hasStocks.
- *
- * @param {object} params        BilanParams
- * @param {number} ca            Chiffre d'affaires calculé
- * @param {number} passifTotal   Total passif (pour équilibrer la tréso)
- * @param {number} actifImmoNet  Total net actif immobilisé
- * @returns {{ circulant, regularisation }}
- */
 function calculerActifCirculant(params, ca, passifTotal, actifImmoNet) {
   const ratios = RATIOS_SECTORIELS[params.societe.secteur];
   const zero   = poste(0);
 
-  // Fallback rétrocompat : niveauStocks absent → dériver de hasStocks
   const niveauStocks = params.finance.niveauStocks
     ?? (params.finance.hasStocks ? 'marchandises' : 'off');
 
@@ -252,19 +208,16 @@ function calculerActifCirculant(params, ca, passifTotal, actifImmoNet) {
   } else {
     const { secteur } = params.societe;
 
-    // marchandises : compte 37 seulement
     const marchandises = (niveauStocks === 'marchandises' || niveauStocks === 'marchandises_mp' || niveauStocks === 'complet')
       ? (secteur === 'commerce' || niveauStocks === 'marchandises_mp')
         ? poste(varier(ca * randFloat(ratios.stocks.min, ratios.stocks.max)))
         : poste(varier(ca * randFloat(ratios.stocks.min * 0.3, ratios.stocks.max * 0.3)))
       : zero;
 
-    // matières premières : compte 31 (marchandises_mp + complet)
     const matieresPremières = (niveauStocks === 'marchandises_mp' || niveauStocks === 'complet')
       ? poste(varier(ca * randFloat(ratios.stocks.min * 0.4, ratios.stocks.max * 0.4)))
       : zero;
 
-    // en-cours et produits finis : complet uniquement
     const enCours       = niveauStocks === 'complet' ? poste(varier(ca * randFloat(0.01, 0.05))) : zero;
     const produitsFinis = niveauStocks === 'complet' ? poste(varier(ca * randFloat(0.02, 0.08))) : zero;
 
@@ -346,19 +299,33 @@ function calculerPassif(params, ca, resultatNet) {
 /**
  * Génère un objet BilanData complet à partir de BilanParams.
  *
+ * CA de base :
+ *   - Si params.societe.caBaseN est fourni (contexte "Année suivante"),
+ *     le CA N+1 est calculé comme caBaseN × (1 ± VARIATION_MONTANTS).
+ *     Cela garantit une cohérence interannuelle réaliste.
+ *   - Sinon, tirage aléatoire dans la fourchette de la tranche (comportement normal).
+ *
  * F54 — Exercice décalé :
  *   Si dureeExerciceMois < 12, le CA est proraté avant toute génération.
- *   Un exercice de 9 mois ne peut pas afficher le même CA qu'un exercice plein.
  *
  * @param {object} params  BilanParams produit par form.js
  * @returns {object}       BilanData complet
  */
 export function generate(params) {
   const tranche = TRANCHES_CA[params.taille.ca];
-  let ca        = varier(randInt(tranche.min, tranche.max));
+  const duree   = params.societe.dureeExerciceMois ?? 12;
+
+  let ca;
+  if (params.societe.caBaseN) {
+    // Année suivante : variation ±VARIATION_MONTANTS autour du CA réel N
+    // clampé dans la fourchette de la tranche pour rester cohérent
+    const caBrut = Math.round(params.societe.caBaseN * (1 + randFloat(-VARIATION_MONTANTS, VARIATION_MONTANTS)));
+    ca = Math.max(tranche.min, Math.min(caBrut, tranche.max));
+  } else {
+    ca = varier(randInt(tranche.min, tranche.max));
+  }
 
   // F54 — prorata CA si exercice court (< 12 mois)
-  const duree = params.societe.dureeExerciceMois ?? 12;
   if (duree < 12) {
     ca = Math.round(ca * (duree / 12));
   }
@@ -385,8 +352,9 @@ export function generate(params) {
     passif,
   };
 
+  // n1 généré aléatoirement uniquement si pas de snapshot figé (compareN1 sans année suivante)
   let n1 = null;
-  if (params.output.compareN1) {
+  if (params.output.compareN1 && !params.societe.caBaseN) {
     const caN1       = Math.round(ca * randFloat(0.85, 1.10));
     const resultatN1 = calculerResultat(params, caN1);
     const passifN1   = calculerPassif(params, caN1, resultatN1.resultatNet);
@@ -406,7 +374,6 @@ export function generate(params) {
     n1 = {
       meta: {
         anneeExercice:     params.societe.anneeExercice - 1,
-        // N-1 : exercice plein supposé (01/01 → 31/12 de l'année précédente)
         dateDebut:         `${params.societe.anneeExercice - 1}-01-01`,
         dateFin:           `${params.societe.anneeExercice - 1}-12-31`,
         dureeExerciceMois: 12,
@@ -419,7 +386,6 @@ export function generate(params) {
     };
   }
 
-  // Fallbacks rétrocompat pour meta (sessions v3 chargées sans migration)
   const niveauImmos  = params.finance.niveauImmos  ?? (params.finance.hasImmobilisations ? 'mixte' : 'off');
   const niveauStocks = params.finance.niveauStocks ?? (params.finance.hasStocks          ? 'marchandises' : 'off');
 
@@ -428,7 +394,6 @@ export function generate(params) {
       societe:            params.societe.nom,
       formeJuridique:     params.societe.formeJuridique,
       secteur:            params.societe.secteur,
-      // F54 — dates complètes dans meta
       dateDebut:          params.societe.dateDebut,
       dateFin:            params.societe.dateFin,
       dureeExerciceMois:  duree,
@@ -438,7 +403,6 @@ export function generate(params) {
       hasInternational:   params.finance.hasInternational,
       niveauStocks,
       niveauImmos,
-      // Alias rétrocompat pour les modules qui lisent encore hasStocks/hasImmobilisations
       hasStocks:          niveauStocks !== 'off',
       hasImmobilisations: niveauImmos  !== 'off',
       orientation:        params.finance.orientation,
