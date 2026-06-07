@@ -3,9 +3,9 @@
  * -------------------------------------------------------
  * Save/Load d'une session Bilapp au format JSON.
  *
- * Format de fichier v3.0 :
+ * Format de fichier v4.0 :
  *   {
- *     version:      string,             // "3.0"
+ *     version:      string,             // "4.0"
  *     timestamp:    string,             // ISO 8601
  *     params:       BilanParams,        // paramètres du formulaire
  *     data:         BilanData,          // données N calculées (snapshot)
@@ -16,6 +16,7 @@
  * Rétrocompatibilité :
  *   v1.0 — dataN1Figee absent → null ; dateDebut/dateFin reconstruits depuis anneeExercice
  *   v2.0 — dateDebut/dateFin absents  → reconstruits depuis anneeExercice
+ *   v3.0 — hasImmobilisations / hasStocks (booléens) → niveauImmos / niveauStocks
  *
  * Exports :
  *   saveSession(data, params, overrides, dataN1Figee?)
@@ -25,7 +26,7 @@
 'use strict';
 
 /** Version courante du format. Incrémenter si structure change. */
-const SESSION_VERSION = '3.0';
+const SESSION_VERSION = '4.0';
 
 // ============================================================
 // SAVE
@@ -139,6 +140,9 @@ export function loadSession(file) {
  *   v1.0 / v2.0 → v3.0 :
  *     params.societe.dateDebut/dateFin absents → reconstruire depuis anneeExercice
  *     dureeExerciceMois absent → 12 (exercice plein supposé)
+ *   v3.0 → v4.0 :
+ *     hasImmobilisations booléen → niveauImmos ('mixte' si true, 'off' si false)
+ *     hasStocks booléen → niveauStocks ('marchandises' si true, 'off' si false)
  *
  * @param {object} payload
  * @throws {Error}
@@ -160,8 +164,10 @@ function _validateAndMigrate(payload) {
     payload.dataN1Figee = null;
   }
 
-  // Migration v1.0 / v2.0 → v3.0 : champs dates absents
   const s = payload.params.societe;
+  const f = payload.params.finance;
+
+  // Migration v1.0 / v2.0 → v3.0 : champs dates absents
   if (s && !s.dateDebut) {
     const annee = s.anneeExercice ?? new Date().getFullYear() - 1;
     s.dateDebut         = `${annee}-01-01`;
@@ -173,9 +179,23 @@ function _validateAndMigrate(payload) {
   // Garantir dureeExerciceMois même si dateFin présent mais durée absente
   if (s && s.dateDebut && s.dateFin && !s.dureeExerciceMois) {
     const d = new Date(s.dateDebut);
-    const f = new Date(s.dateFin);
-    s.dureeExerciceMois = Math.round(((f - d) / (1000 * 60 * 60 * 24 * (365.25 / 12))) * 100) / 100;
+    const fDate = new Date(s.dateFin);
+    s.dureeExerciceMois = Math.round(((fDate - d) / (1000 * 60 * 60 * 24 * (365.25 / 12))) * 100) / 100;
   }
+
+  // Migration v3.0 → v4.0 : booléens → niveaux de granularité
+  if (f && !('niveauImmos' in f) && 'hasImmobilisations' in f) {
+    f.niveauImmos = f.hasImmobilisations ? 'mixte' : 'off';
+    console.info(`[Bilapp session] Migration v3.0→v4.0 : hasImmobilisations=${f.hasImmobilisations} → niveauImmos='${f.niveauImmos}'`);
+  }
+  if (f && !('niveauStocks' in f) && 'hasStocks' in f) {
+    f.niveauStocks = f.hasStocks ? 'marchandises' : 'off';
+    console.info(`[Bilapp session] Migration v3.0→v4.0 : hasStocks=${f.hasStocks} → niveauStocks='${f.niveauStocks}'`);
+  }
+
+  // Valeurs par défaut si les deux champs sont totalement absents (session très ancienne)
+  if (f && !('niveauImmos'  in f)) f.niveauImmos  = 'off';
+  if (f && !('niveauStocks' in f)) f.niveauStocks = 'off';
 
   // Mettre à jour la version dans le payload chargé
   if (payload.version !== SESSION_VERSION) {

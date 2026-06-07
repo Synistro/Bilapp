@@ -239,6 +239,36 @@ export const RATIOS_SECTORIELS = {
 };
 
 // ============================================================
+// NIVEAUX D'IMMOBILISATIONS
+// Remplace le booléen hasImmobilisations (session v4.0+).
+// Pilotent calculerActifImmobilise() dans engine.js.
+// ============================================================
+
+export const NIVEAUX_IMMOS = {
+  off:   { label: 'Aucune',          hint: '' },
+  leger: { label: 'Matériel léger',  hint: 'Installations + matériel de bureau' },
+  mixte: { label: 'Standard',        hint: 'Incorporel + corporel sans terrain' },
+  lourd: { label: 'Lourd',           hint: 'Terrains, constructions, machines' },
+};
+
+// ============================================================
+// NIVEAUX DE STOCKS
+// Remplace le booléen hasStocks (session v4.0+).
+// Pilotent calculerActifCirculant() dans engine.js.
+// Niveaux disponibles par secteur :
+//   commerce  → off / marchandises / marchandises_mp
+//   industrie → off / marchandises_mp / complet
+//   services  → masqué (toujours 'off')
+// ============================================================
+
+export const NIVEAUX_STOCKS = {
+  off:             { label: 'Pas de stocks',    hint: '' },
+  marchandises:    { label: 'Marchandises',      hint: 'Compte 37 uniquement' },
+  marchandises_mp: { label: 'Marchandises + MP', hint: 'Comptes 37 + 31' },
+  complet:         { label: 'Complet',           hint: 'MP, en-cours, produits finis' },
+};
+
+// ============================================================
 // MENTIONS LÉGALES
 // ============================================================
 

@@ -1,182 +1,167 @@
-# Fonctionnalités — Bilapp
+# Fonctionnalites - Bilapp
 
-## Légende
-- 🔴 Non démarré
-- 🟡 En cours / En discussion
-- 🟢 Validé / Spécifié
-- ✅ Implémenté
+## Legende
+- Non demarre
+- En cours / En discussion
+- Valide / Specifie
+- Implemente
 
 ---
 
-## Core — Génération de bilan
+## Core - Generation de bilan
 
-| # | Fonctionnalité | Statut | Notes |
+| # | Fonctionnalite | Statut | Notes |
 |---|---------------|--------|-------|
-| F01 | Formulaire de paramétrage 4 étapes | ✅ | form.js — Q01-Q19 |
-| F02 | Génération du Bilan (Actif / Passif) conforme PCG | ✅ | engine.js |
-| F03 | Génération du Compte de Résultat | ✅ | engine.js |
-| F04 | Cohérence automatique Actif = Passif | ✅ | Trésorerie variable d'ajustement |
-| F05 | Cohérence résultat bilan ↔ compte de résultat | ✅ | validator.js V02 + reconcile.js |
-| F06 | Watermark / mention FICTIF sur tous les documents | ✅ | Bandeau fixe + en-tête |
-| F07 | Comparatif N-1 | ✅ | engine.js + renderers |
-| F08 | Amortissements clampés (amort ≤ brut) | ✅ | engine.js poste() |
-| F09 | Résultat neutre jamais nul — randomisé dans [-999,-1]∪[1,999] | ✅ | engine.js + reconcile.js |
+| F01 | Formulaire de parametrage 4 etapes | Implemente | form.js - Q01-Q19 |
+| F02 | Generation du Bilan (Actif / Passif) conforme PCG | Implemente | engine.js |
+| F03 | Generation du Compte de Resultat | Implemente | engine.js |
+| F04 | Coherence automatique Actif = Passif | Implemente | Tresorerie variable d'ajustement |
+| F05 | Coherence resultat bilan <-> compte de resultat | Implemente | validator.js V02 + reconcile.js |
+| F06 | Watermark / mention FICTIF sur tous les documents | Implemente | Bandeau fixe + en-tete |
+| F07 | Comparatif N-1 | Implemente | engine.js + renderers |
+| F08 | Amortissements clampes (amort <= brut) | Implemente | engine.js poste() |
+| F09 | Resultat neutre jamais nul - randomise dans [-999,-1]u[1,999] | Implemente | engine.js + reconcile.js |
 
 ## Rendu documents
 
-| # | Fonctionnalité | Statut | Notes |
+| # | Fonctionnalite | Statut | Notes |
 |---|---------------|--------|-------|
-| F10 | Rendu bilan comptable HTML | ✅ | bilan.js |
-| F11 | Rendu compte de résultat HTML | ✅ | resultat.js |
-| F12 | Navigation par onglets entre documents | ✅ | bilan.js — buildTabs |
-| F13 | Rendu annexe (4 sections) | ✅ | annexe.js — lecture seule |
-| F14 | Rendu liasse fiscale Cerfa 2050-2059-A | ✅ | liasse.js — 12 imprimés, codes lignes exacts |
+| F10 | Rendu bilan comptable HTML | Implemente | bilan.js |
+| F11 | Rendu compte de resultat HTML | Implemente | resultat.js |
+| F12 | Navigation par onglets entre documents | Implemente | bilan.js - buildTabs |
+| F13 | Rendu annexe (4 sections) | Implemente | annexe.js - lecture seule |
+| F14 | Rendu liasse fiscale Cerfa 2050-2059-A | Implemente | liasse.js - 12 imprimes, codes lignes exacts |
 
-## Édition inline
+## Edition inline
 
-| # | Fonctionnalité | Statut | Notes |
+| # | Fonctionnalite | Statut | Notes |
 |---|---------------|--------|-------|
-| F20 | Clic sur cellule → input inline | ✅ | bilan.js — activerEdition |
-| F21 | Confirmation Enter/blur → verrouillage | ✅ | overrides.js |
-| F22 | Annulation Escape | ✅ | |
-| F23 | Recalcul totaux en cascade | ✅ | reconcile.js |
-| F24 | Propagation resultatNet → passif (CR → bilan) | ✅ | reconcile.js |
-| F25 | Trésorerie comme variable d'ajustement | ✅ | reconcile.js |
-| F26 | Icône cadenas sur postes verrouillés | ✅ | documents.css |
-| F27 | Compteur de verrous dans la barre d'actions | ✅ | bilan.js — updateLockCount |
-| F28 | Bandeau déséquilibre si tréso verrouillée | ✅ | documents.css + bilan.js |
-| F29 | Reset des verrous au nouveau bilan | ✅ | clearOverrides() |
-| F30 | Recalibrage charges par ratio si CA modifié | ✅ | reconcile.js |
-| F31 | Sync variation stocks bilan → CR (PCG) | ✅ | reconcile.js |
-| F32 | Orientation respectée après édition | ✅ | reconcile.js — dotations |
-| F33 | Bouton 🔄 Régénérer — relance engine, garde les overrides | ✅ | bilan.js — bindRegenerer() + generate() |
+| F20 | Clic sur cellule -> input inline | Implemente | bilan.js - activerEdition |
+| F21 | Confirmation Enter/blur -> verrouillage | Implemente | overrides.js |
+| F22 | Annulation Escape | Implemente | |
+| F23 | Recalcul totaux en cascade | Implemente | reconcile.js |
+| F24 | Propagation resultatNet -> passif (CR -> bilan) | Implemente | reconcile.js |
+| F25 | Tresorerie comme variable d'ajustement | Implemente | reconcile.js |
+| F26 | Icone cadenas sur postes verrouilles | Implemente | documents.css |
+| F27 | Compteur de verrous dans la barre d'actions | Implemente | bilan.js - updateLockCount |
+| F28 | Bandeau desequilibre si treso verrouillee | Implemente | documents.css + bilan.js |
+| F29 | Reset des verrous au nouveau bilan | Implemente | clearOverrides() |
+| F30 | Recalibrage charges par ratio si CA modifie | Implemente | reconcile.js |
+| F31 | Sync variation stocks bilan -> CR (PCG) | Implemente | reconcile.js |
+| F32 | Orientation respectee apres edition | Implemente | reconcile.js - dotations |
+| F33 | Bouton Regenerer - relance engine, garde les overrides | Implemente | bilan.js - bindRegenerer() + generate() |
 
 ## Export / Session
 
-| # | Fonctionnalité | Statut | Notes |
+| # | Fonctionnalite | Statut | Notes |
 |---|---------------|--------|-------|
-| F40 | Export PDF via window.print() | ✅ | pdf.js + print.css |
-| F41 | En-tête navy imprimé avec couleurs | ✅ | print-color-adjust |
-| F42 | Mention fictif en pied de page | ✅ | .print-footer |
-| F43 | Saut de page actif / passif | ✅ | print.css |
-| F44 | Save session → download `.json` | ✅ | session.js v2.0, bouton 💾 |
-| F45 | Load session → upload `.json` → restore (vue documents) | ✅ | session.js, bouton 📂 |
-| F46 | Load session depuis la page d'accueil | ✅ | app.js — _bindLoadSessionHome() |
-| F47 | Export Excel / CSV | 🔴 | Backlog |
+| F40 | Export PDF via window.print() | Implemente | pdf.js + print.css |
+| F41 | En-tete navy imprime avec couleurs | Implemente | print-color-adjust |
+| F42 | Mention fictif en pied de page | Implemente | .print-footer |
+| F43 | Saut de page actif / passif | Implemente | print.css |
+| F44 | Save session -> download .json | Implemente | session.js v3.0, bouton |
+| F45 | Load session -> upload .json -> restore (vue documents) | Implemente | session.js, bouton |
+| F46 | Load session depuis la page d'accueil | Implemente | app.js - _bindLoadSessionHome() |
+| F47 | Export Excel / CSV | Non demarre | Backlog |
 
-## Liasse fiscale (P8 — terminée)
+## Liasse fiscale
 
-| # | Fonctionnalité | Statut | Notes |
+| # | Fonctionnalite | Statut | Notes |
 |---|---------------|--------|-------|
-| F70 | Imprimé 2050 — Bilan actif Cerfa | ✅ | Codes lignes exacts AA–BN |
-| F71 | Imprimé 2051 — Bilan passif Cerfa | ✅ | Codes lignes exacts CA–EE |
-| F72 | Imprimé 2052 — CR produits Cerfa | ✅ | Codes lignes exacts FA–HJ |
-| F73 | Imprimé 2053 — CR charges Cerfa | ✅ | Codes lignes exacts GA–HN |
-| F74 | Imprimé 2054 — Tableau immobilisations | ✅ | Début/acq/dim/fin simulés |
-| F75 | Imprimé 2055 — Tableau amortissements | ✅ | Début/dot/dim/fin simulés |
-| F76 | Imprimé 2056 — Tableau provisions | ✅ | |
-| F77 | Imprimé 2057 — Créances et dettes | ✅ | Ventilation échéances ≤1an / >1an |
-| F78 | Imprimé 2058-A — Résultat fiscal | ✅ | Réintégrations simulées 0.5–2% charges ext. |
-| F79 | Imprimé 2058-B — Déficits reportables | ✅ | Vide si bénéficiaire |
-| F80 | Imprimé 2058-C — Affectation résultat | ✅ | |
-| F81 | Imprimé 2059-A — Valeurs mobilières | ✅ | PV/MV latentes simulées |
+| F70 | Imprime 2050 - Bilan actif Cerfa | Implemente | Codes lignes exacts AA-BN |
+| F71 | Imprime 2051 - Bilan passif Cerfa | Implemente | Codes lignes exacts CA-EE |
+| F72 | Imprime 2052 - CR produits Cerfa | Implemente | Codes lignes exacts FA-HJ |
+| F73 | Imprime 2053 - CR charges Cerfa | Implemente | Codes lignes exacts GA-HN |
+| F74 | Imprime 2054 - Tableau immobilisations | Implemente | Debut/acq/dim/fin simules |
+| F75 | Imprime 2055 - Tableau amortissements | Implemente | Debut/dot/dim/fin simules |
+| F76 | Imprime 2056 - Tableau provisions | Implemente | |
+| F77 | Imprime 2057 - Creances et dettes | Implemente | Ventilation echeances <=1an / >1an |
+| F78 | Imprime 2058-A - Resultat fiscal | Implemente | Reintegrations simulees 0.5-2% charges ext. |
+| F79 | Imprime 2058-B - Deficits reportables | Implemente | Vide si beneficiaire |
+| F80 | Imprime 2058-C - Affectation resultat | Implemente | |
+| F81 | Imprime 2059-A - Valeurs mobilieres | Implemente | PV/MV latentes simulees |
 
-## Paramétrage pédagogique
+## Parametrage pedagogique
 
-| # | Fonctionnalité | Statut | Notes |
+| # | Fonctionnalite | Statut | Notes |
 |---|---------------|--------|-------|
-| F50 | Scénario bilan positif / négatif / neutre | ✅ | ORIENTATIONS dans constants.js |
-| F51 | Aspect international | ✅ | hasInternational |
-| F52 | Choix forme juridique (SAS, SARL, SA) | ✅ | |
-| F53 | Ratios sectoriels (commerce/services/industrie) | ✅ | RATIOS_SECTORIELS |
-| F54 | Exercice décalé — date de début libre | 🟢 | Voir spec ci-dessous |
-| F55 | SIRET/SIREN fictifs générés (Luhn) | ✅ | P9c — identite.js |
-| F56 | Adresse fictive générée (ville + CP cohérents) | ✅ | P9c — identite.js, VILLES_FR dans constants.js |
+| F50 | Scenario bilan positif / negatif / neutre | Implemente | ORIENTATIONS dans constants.js |
+| F51 | Aspect international | Implemente | hasInternational |
+| F52 | Choix forme juridique (SAS, SARL, SA) | Implemente | |
+| F53 | Ratios sectoriels (commerce/services/industrie) | Implemente | RATIOS_SECTORIELS |
+| F54 | Exercice decale - date de debut libre | Implemente | Session 010 - date pickers + prorata CA + session v3.0 |
+| F55 | SIRET/SIREN fictifs generes (Luhn) | Implemente | identite.js |
+| F56 | Adresse fictive generee (ville + CP coherents) | Implemente | identite.js, VILLES_FR dans constants.js |
+| F64 | Granularite immobilisations (4 niveaux) | Valide / Specifie | Session 012 - voir spec ci-dessous |
+| F65 | Granularite stocks (4 niveaux) | Valide / Specifie | Session 012 - voir spec ci-dessous |
 
-## Réalisme comptable (P9a — terminée)
+## Realisme comptable
 
-| # | Fonctionnalité | Statut | Notes |
+| # | Fonctionnalite | Statut | Notes |
 |---|---------------|--------|-------|
-| F90 | FR / BFR / Trésorerie nette calculés et affichés | ✅ | P9a — ratios.js, onglet Analyse |
-| F91 | SIG complet — VA, EBE, EBIT, RCAI | ✅ | P9a — ratios.js |
-| F92 | CAF — Capacité d'Autofinancement | ✅ | P9a — ratios.js |
-| F93 | Ratios de rentabilité (ROE, ROA, marge nette, autonomie) | ✅ | P9a — ratios.js |
+| F90 | FR / BFR / Tresorerie nette calcules et affiches | Implemente | ratios.js, onglet Analyse |
+| F91 | SIG complet - VA, EBE, EBIT, RCAI | Implemente | ratios.js |
+| F92 | CAF - Capacite d'Autofinancement | Implemente | ratios.js |
+| F93 | Ratios de rentabilite (ROE, ROA, marge nette, autonomie) | Implemente | ratios.js |
 
-## UX / Workflow (P9d — terminée)
+## UX / Workflow
 
-| # | Fonctionnalité | Statut | Notes |
+| # | Fonctionnalite | Statut | Notes |
 |---|---------------|--------|-------|
-| F95 | Duplication de session vers année suivante | ✅ | P9d — bilan.js bindAnneeSuivante(), session.js v2.0 dataN1Figee |
+| F95 | Duplication de session vers annee suivante | Implemente | bilan.js bindAnneeSuivante(), session.js v2.0 dataN1Figee |
+| F96 | Annee suivante - dates correctes (exercice court -> plein) | Implemente | Session 011 - _calcDatesAnneeSuivante() |
+| F97 | Annee suivante - dialogue choix orientation | Implemente | Session 011 - _showDialogueOrientation() |
+| F98 | Annee suivante - report a nouveau coherent (affectation resultat N) | Implemente | Session 011 - _ajusterReportANouveau() |
 
-## Évolutions futures (backlog)
+## Evolutions futures (backlog)
 
-| # | Fonctionnalité | Statut | Notes |
+| # | Fonctionnalite | Statut | Notes |
 |---|---------------|--------|-------|
-| F60 | Tableau de financement | 🔴 | Niveau DSCG |
-| F61 | Mode élève / formateur | 🔴 | Droits d'édition différenciés |
-| F62 | SCI / EI — formes juridiques supplémentaires | 🔴 | |
-| F63 | Export Excel / CSV | 🔴 | |
+| F60 | Tableau de financement | Non demarre | Niveau DSCG - necessite comparatif N-1 fige (infra dispo depuis F95) |
+| F61 | Mode eleve / formateur | Non demarre | Droits d'edition differencies |
+| F62 | SCI / EI - formes juridiques supplementaires | Non demarre | SCI -> pas d'IS, resultat transparent. EI -> pas de capital social |
+| F63 | Export Excel / CSV | Non demarre | Tableaux brut/amort/net + CR en .xlsx ou .csv |
+| F66 | Dettes bancaires graduees | Non demarre | Backlog - complexe (amortissement dette, capital restant du en annee 2) |
+| F67 | Pourcentage d'export international | Non demarre | Backlog - CA ventile France/export, creances en devises, liasse 2052 |
 
 ---
 
-## Spec F54 — Exercice décalé
+## Spec F64/F65 - Granularite des caracteristiques (session 012)
 
-### Contexte
-En France, une société peut ouvrir son exercice n'importe quel jour de l'année.
-Cas fréquents en pédagogie : 01/07→30/06 (grande distribution, agriculture),
-01/04→31/03 (filiales UK/JP), et surtout **première année incomplète** (création
-en cours d'année, ex. 15/03/2024 → 31/12/2024 = 9,5 mois).
+### Niveaux stocks (niveauStocks) - remplace hasStocks
+| Cle | Label | Postes generes |
+|-----|-------|---------------|
+| off | Pas de stocks | aucun |
+| marchandises | Marchandises | compte 37 |
+| marchandises_mp | Marchandises + MP | comptes 37 + 31 |
+| complet | Complet | comptes 37 + 31 + 33 + 35 |
 
-### Ce qui change dans le formulaire (étape 1)
-- Remplacer le champ `anneeExercice` (number) par deux champs :
-  - `dateDebut` — `<input type="date">` — défaut : 01/01/année précédente
-  - `dateFin`   — `<input type="date">` — défaut : 31/12/même année
-- Validation : dateFin > dateDebut, durée ≤ 24 mois (exercice exceptionnel max légal)
-- La durée en mois est calculée et stockée dans `params.societe.dureeExerciceMois`
+Niveaux disponibles par secteur :
+- services  : masque (inchange)
+- commerce  : off / marchandises / marchandises_mp
+- industrie : off / marchandises_mp / complet
 
-### Ce qui change dans BilanParams
-```js
-societe: {
-  // Remplace anneeExercice
-  dateDebut:           'YYYY-MM-DD',  // ex. '2024-03-15'
-  dateFin:             'YYYY-MM-DD',  // ex. '2024-12-31'
-  dureeExerciceMois:   number,        // ex. 9.5 — calculé, pas saisi
-  // anneeExercice conservé comme alias = année de dateFin (rétrocompat sessions v1/v2)
-  anneeExercice:       number,
-  // ... reste inchangé
-}
-```
+### Niveaux immos (niveauImmos) - remplace hasImmobilisations
+| Cle | Label | Postes generes |
+|-----|-------|---------------|
+| off | Aucune | aucun |
+| leger | Materiel leger | installations + autresCorporel |
+| mixte | Standard | incorporel + corporel sans terrain |
+| lourd | Lourd | tout : terrains + constructions + incorporel + corporel |
 
-### Ce qui change dans engine.js
-- Le CA généré est multiplié par `dureeExerciceMois / 12` si durée < 12 mois
-  (ex. 9 mois → CA × 0.75). Cela rend le bilan cohérent pour une première année courte.
-- Pas de prorata si durée ≥ 12 mois (exercice normal ou exceptionnel long).
+Tous niveaux disponibles pour tous les secteurs.
 
-### Ce qui change dans doc-helpers.js — buildHeader
-- Affichage : "Exercice du JJ/MM/AAAA au JJ/MM/AAAA" au lieu de "Exercice clos le 31/12/AAAA"
-- Si durée < 12 mois : badge "(exercice court — X mois)" visible dans l'en-tête
+### Migration session v3.0 -> v4.0
+- hasImmobilisations=true  -> niveauImmos='mixte'
+- hasImmobilisations=false -> niveauImmos='off'
+- hasStocks=true           -> niveauStocks='marchandises'
+- hasStocks=false          -> niveauStocks='off'
 
-### Ce qui change dans les renderers
-- `bilan.js`, `resultat.js`, `annexe.js`, `liasse.js` : partout où on affiche
-  `anneeExercice` seul, on affiche la plage de dates.
-- La liasse fiscale (Cerfa) utilise déjà des champs date — à câbler avec dateDebut/dateFin.
-
-### Rétrocompatibilité sessions v1.0 / v2.0
-- Au chargement d'une session ancienne sans `dateDebut`/`dateFin` :
-  reconstruire `dateDebut = '${anneeExercice}-01-01'`, `dateFin = '${anneeExercice}-12-31'`
-
-### Fichiers touchés
-| Fichier | Nature de la modif |
-|---------|-------------------|
-| `js/modules/form.js` | Remplace Q05 par deux date pickers + validation + calcul durée |
-| `js/core/constants.js` | Aucune |
-| `js/core/engine.js` | Prorata CA si dureeExerciceMois < 12 |
-| `js/utils/doc-helpers.js` | buildHeader — affichage plage dates + badge exercice court |
-| `js/export/session.js` | v3.0 — migration rétrocompat dateDebut/dateFin |
-| `js/modules/bilan.js` | Passe dateDebut/dateFin là où anneeExercice est affiché |
-| `js/modules/resultat.js` | Idem |
-| `js/modules/annexe.js` | Idem |
-| `js/modules/liasse.js` | Câblage champs date Cerfa |
-
-### Estimation complexité
-~4–5k tokens. Session courte autonome.
+### Fichiers touches
+| Fichier | Nature |
+|---------|--------|
+| `js/core/constants.js` | Ajouter NIVEAUX_STOCKS + NIVEAUX_IMMOS |
+| `js/modules/form.js` | Remplacer toggles par radios 4 niveaux |
+| `js/core/engine.js` | Logique 4 niveaux dans calculerActifImmobilise + calculerActifCirculant |
+| `js/export/session.js` | v4.0 + migration booleens -> niveaux |
+| `css/form.css` | Styles radio niveaux si necessaire |

@@ -26,6 +26,8 @@ import {
   ORIENTATIONS,
   REGIMES_TVA,
   TVA_DEFAUT_PAR_TRANCHE,
+  NIVEAUX_IMMOS,
+  NIVEAUX_STOCKS,
 } from '../core/constants.js';
 
 import { genererIdentite } from '../utils/identite.js';
@@ -39,6 +41,13 @@ const DUREE_EXERCICE_MAX_MOIS = 24;
 
 /** Seuil en-dessous duquel on affiche le badge "exercice court" */
 const SEUIL_EXERCICE_COURT_MOIS = 11.5;
+
+// Niveaux de stocks disponibles par secteur
+const NIVEAUX_STOCKS_PAR_SECTEUR = {
+  commerce:  ['off', 'marchandises', 'marchandises_mp'],
+  industrie: ['off', 'marchandises_mp', 'complet'],
+  services:  [],   // masqué
+};
 
 // ============================================================
 // ÉTAT INTERNE DU FORMULAIRE
@@ -86,9 +95,9 @@ function _defaultParams() {
     },
     finance: {
       orientation:        '',
-      hasImmobilisations: false,
+      niveauImmos:        'off',
       hasDettesBancaires: false,
-      hasStocks:          false,
+      niveauStocks:       'off',
       hasInternational:   false,
       regimeTVA:          '',
     },
@@ -280,9 +289,9 @@ function _fillFormFromParams(step) {
   }
   if (step === 3) {
     if (_params.finance.orientation) _selectRadio('orientation', _params.finance.orientation);
-    _setToggle('hasImmobilisations', _params.finance.hasImmobilisations);
+    _selectRadio('niveauImmos',  _params.finance.niveauImmos  || 'off');
     _setToggle('hasDettesBancaires', _params.finance.hasDettesBancaires);
-    _setToggle('hasStocks',          _params.finance.hasStocks);
+    _selectRadio('niveauStocks', _params.finance.niveauStocks || 'off');
     _setToggle('hasInternational',   _params.finance.hasInternational);
     if (_params.finance.regimeTVA) _selectRadio('regimeTVA', _params.finance.regimeTVA);
     _updateStocksVisibility();
@@ -482,10 +491,34 @@ function _buildStep2() {
 }
 
 /**
+ * Construit un groupe de radio-cards pour un niveau (immos ou stocks).
+ * @param {string}   name    - name HTML du radio group
+ * @param {Object}   niveaux - objet { clé: { label, hint } }
+ * @param {string[]} [allowed] - si fourni, filtre les clés autorisées
+ * @returns {string} HTML
+ */
+function _buildNiveauRadios(name, niveaux, allowed = null) {
+  const entries = Object.entries(niveaux).filter(([key]) => !allowed || allowed.includes(key));
+  return entries.map(([key, { label, hint }]) => `
+    <label>
+      <input type="radio" name="${name}" value="${key}" />
+      <div class="choice-card">
+        <span class="choice-card__label">${label}</span>
+        ${hint ? `<span class="choice-card__desc">${hint}</span>` : ''}
+      </div>
+    </label>
+  `).join('');
+}
+
+/**
  * Étape 3 — Paramètres financiers.
+ * Les toggles hasImmobilisations et hasStocks sont remplacés par
+ * des radio-groups à 4 niveaux (niveauImmos, niveauStocks).
  * @returns {string} HTML
  */
 function _buildStep3() {
+  const secteur = _params.societe.secteur;
+
   const orientationOptions = Object.entries(ORIENTATIONS).map(([key, { label }]) => `
     <label>
       <input type="radio" name="orientation" value="${key}" />
@@ -504,6 +537,10 @@ function _buildStep3() {
     </label>
   `).join('');
 
+  // Niveaux stocks filtrés selon secteur (sera re-rendu si secteur change, mais secteur est fixé à l'étape 1)
+  const niveauxStocksAllowed = NIVEAUX_STOCKS_PAR_SECTEUR[secteur] ?? [];
+  const stocksHidden = secteur === 'services';
+
   return `
     <div class="step-header">
       <div class="step-header__eyebrow">Étape 3 sur ${TOTAL_STEPS}</div>
@@ -519,21 +556,21 @@ function _buildStep3() {
       </div>
     </div>
 
-    <!-- Q10-Q13 — Toggles -->
+    <!-- Q10 — Immobilisations (4 niveaux) -->
     <div class="form-group">
-      <label class="form-label">Caractéristiques de l'entreprise</label>
-      <div class="toggle-group">
+      <label class="form-label">
+        Immobilisations
+        <span class="form-label__hint">Actif immobilisé généré</span>
+      </label>
+      <div class="choice-group choice-group--2col" role="radiogroup" aria-label="Niveau d'immobilisations" id="groupNiveauImmos">
+        ${_buildNiveauRadios('niveauImmos', NIVEAUX_IMMOS)}
+      </div>
+    </div>
 
-        <div class="toggle-item">
-          <div class="toggle-item__text">
-            <span class="toggle-item__label">Immobilisations</span>
-            <span class="toggle-item__hint">Bureaux, machines, véhicules, matériel…</span>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="hasImmobilisations" name="hasImmobilisations" />
-            <span class="toggle-switch__track"></span>
-          </label>
-        </div>
+    <!-- Q11 — Dettes bancaires (toggle inchangé) -->
+    <div class="form-group">
+      <label class="form-label">Caractéristiques supplémentaires</label>
+      <div class="toggle-group">
 
         <div class="toggle-item">
           <div class="toggle-item__text">
@@ -542,18 +579,6 @@ function _buildStep3() {
           </div>
           <label class="toggle-switch">
             <input type="checkbox" id="hasDettesBancaires" name="hasDettesBancaires" />
-            <span class="toggle-switch__track"></span>
-          </label>
-        </div>
-
-        <!-- Q12 — Stocks : masqué si secteur = services -->
-        <div class="toggle-item" id="toggleStocks">
-          <div class="toggle-item__text">
-            <span class="toggle-item__label">Stocks</span>
-            <span class="toggle-item__hint">Marchandises, matières premières, produits finis</span>
-          </div>
-          <label class="toggle-switch">
-            <input type="checkbox" id="hasStocks" name="hasStocks" />
             <span class="toggle-switch__track"></span>
           </label>
         </div>
@@ -569,6 +594,17 @@ function _buildStep3() {
           </label>
         </div>
 
+      </div>
+    </div>
+
+    <!-- Q12 — Stocks (4 niveaux, masqué si services) -->
+    <div class="form-group" id="groupStocks"${stocksHidden ? ' style="display:none"' : ''}>
+      <label class="form-label">
+        Stocks
+        <span class="form-label__hint">Actif circulant — stocks générés</span>
+      </label>
+      <div class="choice-group choice-group--2col" role="radiogroup" aria-label="Niveau de stocks">
+        ${_buildNiveauRadios('niveauStocks', NIVEAUX_STOCKS, stocksHidden ? [] : niveauxStocksAllowed)}
       </div>
     </div>
 
@@ -794,15 +830,16 @@ function _collectStep(step) {
   }
   if (step === 3) {
     _params.finance.orientation        = _getRadio('orientation');
-    _params.finance.hasImmobilisations = _getToggle('hasImmobilisations');
+    _params.finance.niveauImmos        = _getRadio('niveauImmos') || 'off';
     _params.finance.hasDettesBancaires = _getToggle('hasDettesBancaires');
-    _params.finance.hasStocks          = _getToggle('hasStocks');
     _params.finance.hasInternational   = _getToggle('hasInternational');
     _params.finance.regimeTVA          = _getRadio('regimeTVA');
 
-    // Forcer hasStocks à false si secteur = services
+    // Services : stocks toujours off
     if (_params.societe.secteur === 'services') {
-      _params.finance.hasStocks = false;
+      _params.finance.niveauStocks = 'off';
+    } else {
+      _params.finance.niveauStocks = _getRadio('niveauStocks') || 'off';
     }
   }
   if (step === 4) {
@@ -862,7 +899,12 @@ function _validateStep(step) {
 
   if (step === 3) {
     if (!_getRadio('orientation')) errors.push({ field: 'orientation', message: "Sélectionnez l'orientation du résultat." });
+    if (!_getRadio('niveauImmos')) errors.push({ field: 'niveauImmos', message: "Sélectionnez un niveau d'immobilisations." });
     if (!_getRadio('regimeTVA'))   errors.push({ field: 'regimeTVA',   message: 'Sélectionnez le régime TVA.' });
+    // Stocks obligatoire uniquement si secteur != services
+    if (_params.societe.secteur !== 'services' && !_getRadio('niveauStocks')) {
+      errors.push({ field: 'niveauStocks', message: 'Sélectionnez un niveau de stocks.' });
+    }
   }
 
   return errors;
@@ -944,19 +986,13 @@ function _updateDureeDisplay() {
 }
 
 /**
- * Masque/affiche le toggle Stocks selon le secteur.
- * Appelé à l'init de l'étape 3 et au changement de valeur.
+ * Masque le bloc stocks si secteur = services.
+ * Le secteur est fixé à l'étape 1 — ce callback est conservé pour robustesse.
  */
 function _updateStocksVisibility() {
-  const toggleStocks = document.getElementById('toggleStocks');
-  if (!toggleStocks) return;
-
-  // Le secteur a été collecté à l'étape 1
-  if (_params.societe.secteur === 'services') {
-    toggleStocks.style.display = 'none';
-  } else {
-    toggleStocks.style.display = '';
-  }
+  const groupStocks = document.getElementById('groupStocks');
+  if (!groupStocks) return;
+  groupStocks.style.display = _params.societe.secteur === 'services' ? 'none' : '';
 }
 
 /**
@@ -985,15 +1021,19 @@ function _buildRecap() {
     ? `${fmtDateFR(_params.societe.dateDebut)} → ${fmtDateFR(_params.societe.dateFin)}`
     : String(_params.societe.anneeExercice);
 
+  const { NIVEAUX_IMMOS: NI, NIVEAUX_STOCKS: NS } = { NIVEAUX_IMMOS, NIVEAUX_STOCKS };
+
   const items = [
-    { key: 'Société',    value: _params.societe.nom || '—' },
-    { key: 'Forme',      value: _params.societe.formeJuridique || '—' },
-    { key: 'Secteur',    value: SECTEURS[_params.societe.secteur] || '—' },
-    { key: 'Exercice',   value: exerciceAff },
-    { key: 'CA',         value: TRANCHES_CA[_params.taille.ca]?.label || '—' },
-    { key: 'Salariés',   value: TRANCHES_EMPLOYES[_params.taille.nbEmployes] || '—' },
-    { key: 'Résultat',   value: ORIENTATIONS[_params.finance.orientation]?.label || '—' },
-    { key: 'Régime TVA', value: REGIMES_TVA[_params.finance.regimeTVA] || '—' },
+    { key: 'Société',        value: _params.societe.nom || '—' },
+    { key: 'Forme',          value: _params.societe.formeJuridique || '—' },
+    { key: 'Secteur',        value: SECTEURS[_params.societe.secteur] || '—' },
+    { key: 'Exercice',       value: exerciceAff },
+    { key: 'CA',             value: TRANCHES_CA[_params.taille.ca]?.label || '—' },
+    { key: 'Salariés',       value: TRANCHES_EMPLOYES[_params.taille.nbEmployes] || '—' },
+    { key: 'Résultat',       value: ORIENTATIONS[_params.finance.orientation]?.label || '—' },
+    { key: 'Immobilisations',value: NI[_params.finance.niveauImmos]?.label || '—' },
+    { key: 'Stocks',         value: NS[_params.finance.niveauStocks]?.label || '—' },
+    { key: 'Régime TVA',     value: REGIMES_TVA[_params.finance.regimeTVA] || '—' },
   ];
 
   grid.innerHTML = items.map(({ key, value }) => `
