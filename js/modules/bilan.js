@@ -22,6 +22,7 @@ import { reconcile }                             from '../core/reconcile.js';
 import { exportDocument }                        from '../export/pdf.js';
 import { saveSession, loadSession }              from '../export/session.js';
 import { generate }                              from '../core/engine.js';
+import { ORIENTATIONS, TAUX }                   from '../core/constants.js';
 
 // ============================================================
 // ÉTAT DU MODULE
@@ -30,7 +31,7 @@ import { generate }                              from '../core/engine.js';
 let _currentData     = null;
 let _currentParams   = null;
 let _currentTab      = 'bilan';
-/** BilanData N-1 figé lors d'une duplication Année suivante (P9d). */
+/** BilanData N-1 figé lors d'une duplication Année suivante. */
 let _dataN1Figee     = null;
 
 // ============================================================
@@ -360,7 +361,6 @@ function bindSessionButtons() {
 
   if (btnSave) {
     btnSave.addEventListener('click', () => {
-      // Transmet dataN1Figee si présent (session P9d)
       saveSession(_currentData, _currentParams, getOverrides(), _dataN1Figee);
     });
   }
@@ -383,7 +383,6 @@ function bindSessionButtons() {
 
         _currentData   = payload.data;
         _currentParams = payload.params;
-        // Restaure le N-1 figé si présent (sessions v2.0)
         _dataN1Figee   = payload.dataN1Figee ?? null;
 
         const defaultTab = payload.params.output?.bilan ? 'bilan'
@@ -411,16 +410,219 @@ function bindRegenerer() {
 }
 
 // ============================================================
-// BINDING BOUTON ANNÉE SUIVANTE (P9d)
+// UTILITAIRE — CALCUL DATES ANNÉE SUIVANTE
 // ============================================================
 
 /**
- * Duplique vers l'année suivante :
- * 1. Fige les données N courantes comme N-1 exact (snapshot profond)
- * 2. Incrémente anneeExercice dans les params
- * 3. Force compareN1 = true pour afficher la colonne N-1
- * 4. Génère les nouvelles données N
- * 5. Injecte les données N-1 figées dans data.n1 via la structure attendue
+ * Calcule les dates de l'exercice suivant à partir du meta courant.
+ *
+ * Règle :
+ *   - L'exercice suivant commence toujours le lendemain de dateFin N.
+ *   - Il se termine le 31/12 de son année de début (exercice plein standard).
+ *   - dureeExerciceMois est recalculé.
+ *
+ * Exemple :
+ *   N  : 15/03/2024 → 31/12/2024 (9.5 mois)
+ *   N+1: 01/01/2025 → 31/12/2025 (12 mois)  ← exercice plein
+ *
+ * @param {object} meta  BilanData.meta courant
+ * @returns {{ dateDebut: string, dateFin: string, dureeExerciceMois: number, anneeExercice: number }}
+ */
+function _calcDatesAnneeSuivante(meta) {
+  const finN = new Date(meta.dateFin);
+
+  // Lendemain de la date de clôture N
+  const debutN1 = new Date(finN);
+  debutN1.setDate(debutN1.getDate() + 1);
+
+  // Fin = 31/12 de l'année de début N+1 (exercice plein)
+  const anneeN1 = debutN1.getFullYear();
+  const finN1   = new Date(`${anneeN1}-12-31`);
+
+  const msParMois     = 1000 * 60 * 60 * 24 * (365.25 / 12);
+  const dureeExercice = Math.round(((finN1 - debutN1) / msParMois) * 100) / 100;
+
+  return {
+    dateDebut:         debutN1.toISOString().slice(0, 10),
+    dateFin:           finN1.toISOString().slice(0, 10),
+    dureeExerciceMois: dureeExercice,
+    anneeExercice:     anneeN1,
+  };
+}
+
+// ============================================================
+// UTILITAIRE — AJUSTEMENT REPORT À NOUVEAU
+// ============================================================
+
+/**
+ * Ajuste le report à nouveau et les réserves de l'année N+1
+ * pour refléter l'affectation comptable du résultat N.
+ *
+ * Règles PCG :
+ *   Résultat N déficitaire  → report à nouveau débiteur (négatif) en N+1
+ *   Résultat N bénéficiaire → affectation minimale légale :
+ *     5% en réserve légale (plafonné à 10% du capital)
+ *     solde en report à nouveau créditeur (positif)
+ *
+ * On modifie directement le BilanData N+1 après génération.
+ * La réconciliation recalcule l'équilibre ensuite.
+ *
+ * @param {object} dataN1  BilanData N (le snapshot figé)
+ * @param {object} dataN2  BilanData N+1 (fraîchement généré, muté en place)
+ */
+function _ajusterReportANouveau(dataN1, dataN2) {
+  const resultatN  = dataN1.resultat.resultatNet;
+  const capitalN2  = dataN2.bilan.passif.capitauxPropres.capital;
+  const cp         = dataN2.bilan.passif.capitauxPropres;
+
+  if (resultatN < 0) {
+    // Déficit N → report à nouveau débiteur en N+1
+    // Le déficit s'ajoute algébriquement au report à nouveau existant.
+    cp.reportANouveau = Math.round(cp.reportANouveau + resultatN);
+
+  } else if (resultatN > 0) {
+    // Bénéfice N → affectation minimale légale
+    // Réserve légale : 5% du bénéfice jusqu'au plafond (10% du capital)
+    const plafondReserveLegale = Math.round(capitalN2 * TAUX.RESERVE_LEGALE_PLAFOND);
+    const dotationLegale       = Math.min(
+      Math.round(resultatN * TAUX.RESERVE_LEGALE_TAUX),
+      Math.max(0, plafondReserveLegale - cp.reserveLegale)
+    );
+    cp.reserveLegale  = Math.round(cp.reserveLegale + dotationLegale);
+    // Solde → report à nouveau créditeur
+    const solde = resultatN - dotationLegale;
+    cp.reportANouveau = Math.round(cp.reportANouveau + solde);
+  }
+  // Résultat exactement 0 → rien à affecter (cas pédagogique rare)
+
+  // Recalcule le total capitaux propres après ajustement
+  cp.total = Math.round(
+    cp.capital +
+    cp.primesEmission +
+    cp.reserveLegale +
+    cp.autresReserves +
+    cp.reportANouveau +
+    cp.resultat
+  );
+
+  // Propage au total passif (nécessaire pour l'équilibre avant reconcile)
+  dataN2.bilan.passif.total = Math.round(
+    cp.total +
+    dataN2.bilan.passif.provisions.total +
+    dataN2.bilan.passif.dettes.total +
+    dataN2.bilan.passif.regularisation.total
+  );
+}
+
+// ============================================================
+// DIALOGUE ORIENTATION ANNÉE SUIVANTE
+// ============================================================
+
+/**
+ * Affiche un dialogue modal inline pour choisir l'orientation de l'année N+1.
+ * Aucun window.prompt — HTML injecté dans le DOM.
+ *
+ * @param {object}   dataN1Snap  Snapshot BilanData N (pour afficher le résultat N)
+ * @param {Function} onChoix     Callback(orientation: string)
+ */
+function _showDialogueOrientation(dataN1Snap, onChoix) {
+  // Retire tout dialogue existant
+  document.getElementById('dialogueOrientation')?.remove();
+
+  const resultatN     = dataN1Snap.resultat.resultatNet;
+  const resultatFmt   = Math.abs(resultatN).toLocaleString('fr-FR') + ' €';
+  const resultatLabel = resultatN < 0
+    ? `Déficit N : <strong class="is-negative">−${resultatFmt}</strong>`
+    : resultatN > 0
+      ? `Bénéfice N : <strong class="is-positive">${resultatFmt}</strong>`
+      : `Résultat N : <strong>0 €</strong>`;
+
+  const anneeN1Dates = _calcDatesAnneeSuivante(dataN1Snap.meta);
+  const anneeLabel   = anneeN1Dates.dureeExerciceMois >= 11.5
+    ? `Exercice ${anneeN1Dates.anneeExercice} (01/01 → 31/12)`
+    : `Exercice ${anneeN1Dates.dateDebut} → ${anneeN1Dates.dateFin}`;
+
+  const overlay = document.createElement('div');
+  overlay.id        = 'dialogueOrientation';
+  overlay.className = 'annee-dialog-overlay';
+  overlay.innerHTML = `
+    <div class="annee-dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitre">
+      <div class="annee-dialog__header">
+        <h2 class="annee-dialog__title" id="dialogTitre">📅 Générer l'année suivante</h2>
+        <button class="annee-dialog__close" id="dialogClose" aria-label="Annuler">✕</button>
+      </div>
+
+      <div class="annee-dialog__body">
+        <div class="annee-dialog__info">
+          <div class="annee-dialog__info-row">${resultatLabel}</div>
+          <div class="annee-dialog__info-row">
+            <span>Prochain exercice :</span>
+            <strong>${anneeLabel}</strong>
+          </div>
+          ${resultatN < 0 ? `
+          <div class="annee-dialog__note">
+            ℹ️ Le déficit de l'année N sera reporté en <strong>report à nouveau débiteur</strong>
+            dans les capitaux propres de l'année suivante.
+          </div>` : resultatN > 0 ? `
+          <div class="annee-dialog__note">
+            ℹ️ Le bénéfice de l'année N sera affecté selon les règles légales :
+            5% en réserve légale, solde en <strong>report à nouveau créditeur</strong>.
+          </div>` : ''}
+        </div>
+
+        <p class="annee-dialog__question">Quel résultat pour l'exercice suivant ?</p>
+
+        <div class="annee-dialog__orientations">
+          <button class="annee-dialog__btn annee-dialog__btn--positif" data-orientation="positif">
+            <span class="annee-dialog__btn-icon">📈</span>
+            <span class="annee-dialog__btn-label">Bénéficiaire</span>
+            <span class="annee-dialog__btn-hint">+3% à +12% du CA</span>
+          </button>
+          <button class="annee-dialog__btn annee-dialog__btn--neutre" data-orientation="neutre">
+            <span class="annee-dialog__btn-icon">⚖️</span>
+            <span class="annee-dialog__btn-label">À l'équilibre</span>
+            <span class="annee-dialog__btn-hint">±0,5% du CA</span>
+          </button>
+          <button class="annee-dialog__btn annee-dialog__btn--negatif" data-orientation="negatif">
+            <span class="annee-dialog__btn-icon">📉</span>
+            <span class="annee-dialog__btn-label">Déficitaire</span>
+            <span class="annee-dialog__btn-hint">−1% à −15% du CA</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // Fermeture
+  overlay.querySelector('#dialogClose').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  // Choix orientation
+  overlay.querySelectorAll('.annee-dialog__btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const orientation = btn.dataset.orientation;
+      overlay.remove();
+      onChoix(orientation);
+    });
+  });
+
+  // Focus trap minimal
+  overlay.querySelector('.annee-dialog__btn--positif').focus();
+}
+
+// ============================================================
+// BINDING BOUTON ANNÉE SUIVANTE
+// ============================================================
+
+/**
+ * Flux complet :
+ * 1. Snapshot profond des données N → N-1 figé
+ * 2. Calcule les dates de l'exercice N+1 (plein si N était court)
+ * 3. Ouvre le dialogue orientation
+ * 4. Sur choix : génère N+1, injecte N-1 figé, ajuste report à nouveau,
+ *    réconcilie, rend l'onglet bilan
  */
 function bindAnneeSuivante() {
   const btn = document.getElementById('btnAnneeSuivante');
@@ -428,31 +630,50 @@ function bindAnneeSuivante() {
 
   btn.addEventListener('click', () => {
     // Snapshot profond des données N courantes → elles deviennent N-1
-    _dataN1Figee = JSON.parse(JSON.stringify(_currentData));
+    const snapshot = JSON.parse(JSON.stringify(_currentData));
 
-    // Nouveaux params : année +1, compareN1 forcé
-    const newParams = JSON.parse(JSON.stringify(_currentParams));
-    newParams.societe.anneeExercice += 1;
-    newParams.output.compareN1       = true;
-    _currentParams = newParams;
+    _showDialogueOrientation(snapshot, (orientation) => {
+      // Fige le snapshot comme N-1
+      _dataN1Figee = snapshot;
 
-    // Génère les données N (nouvelles)
-    const freshData = generate(newParams);
+      // Calcule les dates de l'exercice N+1
+      const datesN1 = _calcDatesAnneeSuivante(_dataN1Figee.meta);
 
-    // Injecte le snapshot N-1 figé dans la structure n1 du nouveau BilanData.
-    // On construit n1 à partir du snapshot : meta d'exercice + bilan + résultat.
-    freshData.n1 = {
-      meta:     { anneeExercice: _dataN1Figee.meta.anneeExercice },
-      bilan:    _dataN1Figee.bilan,
-      resultat: _dataN1Figee.resultat,
-    };
+      // Nouveaux params : exercice N+1 plein, orientation choisie, compareN1 forcé
+      const newParams = JSON.parse(JSON.stringify(_currentParams));
+      newParams.societe.dateDebut         = datesN1.dateDebut;
+      newParams.societe.dateFin           = datesN1.dateFin;
+      newParams.societe.dureeExerciceMois = datesN1.dureeExerciceMois;
+      newParams.societe.anneeExercice     = datesN1.anneeExercice;
+      newParams.finance.orientation       = orientation;
+      newParams.output.compareN1          = true;
+      _currentParams = newParams;
 
-    // Réconciliation (overrides existants réinitialisés — contexte différent)
-    clearOverrides();
-    const { data, desequilibre } = reconcile(freshData, getOverrides(), newParams);
-    _currentData = data;
+      // Génère les données N+1
+      const freshData = generate(newParams);
 
-    renderTab('bilan', desequilibre);
+      // Injecte le N-1 figé dans la structure n1
+      freshData.n1 = {
+        meta: {
+          anneeExercice:     _dataN1Figee.meta.anneeExercice,
+          dateDebut:         _dataN1Figee.meta.dateDebut,
+          dateFin:           _dataN1Figee.meta.dateFin,
+          dureeExerciceMois: _dataN1Figee.meta.dureeExerciceMois,
+        },
+        bilan:    _dataN1Figee.bilan,
+        resultat: _dataN1Figee.resultat,
+      };
+
+      // Ajuste le report à nouveau selon l'affectation du résultat N
+      _ajusterReportANouveau(_dataN1Figee, freshData);
+
+      // Réconciliation — overrides réinitialisés (contexte différent)
+      clearOverrides();
+      const { data, desequilibre } = reconcile(freshData, getOverrides(), newParams);
+      _currentData = data;
+
+      renderTab('bilan', desequilibre);
+    });
   });
 }
 
@@ -491,11 +712,12 @@ function renderTab(tab, desequilibre = 0) {
     content = buildAnalyse(_currentData, _currentParams);
   }
 
-  // Le bouton Année suivante est affiché seulement si on n'a pas déjà
-  // un N-1 figé provenant d'une duplication (évite les doublons infinis).
+  // Bouton Année suivante : masqué si déjà en mode N+1
   const btnAnneeSuivanteHtml = !_dataN1Figee
     ? `<button class="btn btn--secondary btn--sm" id="btnAnneeSuivante" title="Générer l'exercice suivant avec ce bilan comme N-1">📅 Année suivante</button>`
-    : `<span class="annee-suivante-badge" title="N-1 issu de la duplication">📅 N-1 figé : ${_dataN1Figee.meta.anneeExercice}</span>`;
+    : `<span class="annee-suivante-badge" title="N-1 figé : exercice ${_dataN1Figee.meta.anneeExercice}">
+         📅 N-1 figé : ${_dataN1Figee.meta.anneeExercice}
+       </span>`;
 
   app.innerHTML = `
     <header class="app-header">

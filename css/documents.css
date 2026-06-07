@@ -180,7 +180,7 @@
   font-weight: var(--weight-bold);
 }
 
-/* Badge affiché après duplication Année suivante (P9d) */
+/* Badge affiché après duplication Année suivante */
 .annee-suivante-badge {
   display: inline-flex;
   align-items: center;
@@ -352,6 +352,10 @@
 .doc-table .is-negative { color: var(--color-error); }
 .doc-table .is-zero     { color: var(--color-text-muted); opacity: 0.45; }
 
+/* Classes globales utilisées dans le dialogue */
+.is-positive { color: var(--color-success, #1a7a4a); }
+.is-negative { color: var(--color-error,   #c0392b); }
+
 /* ============================================================
    COLONNES
    ============================================================ */
@@ -371,7 +375,6 @@
   font-size: var(--text-xs);
 }
 
-/* Colonne hint (interprétation dans l'onglet Analyse) */
 .col--hint {
   color: var(--color-text-muted);
   font-size: var(--text-xs);
@@ -492,7 +495,6 @@
   align-items: start;
 }
 
-/* Équilibre financier (bloc 1) et Ratios (bloc 4) sur toute la largeur */
 .analyse-layout .doc-section:nth-child(1),
 .analyse-layout .doc-section:nth-child(4) {
   grid-column: 1 / -1;
@@ -504,7 +506,6 @@
   .analyse-layout .doc-section:nth-child(4) { grid-column: 1; }
 }
 
-/* Ligne d'interprétation contextuelle sous un indicateur FR/BFR/TN */
 .analyse-hint {
   font-size: var(--text-xs) !important;
   font-style: italic;
@@ -516,11 +517,188 @@
   opacity: 1 !important;
 }
 
-/* Note méthodologique sous les tableaux SIG/CAF/Ratios */
 .analyse-note {
   font-size: var(--text-xs);
   color: var(--color-text-muted);
   font-style: italic;
   margin: var(--space-2) 0 0;
   line-height: 1.65;
+}
+
+/* ============================================================
+   DIALOGUE ORIENTATION — ANNÉE SUIVANTE
+   ============================================================ */
+
+/* Overlay plein écran */
+.annee-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 40, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  animation: fadeOverlay 0.15s ease-out;
+}
+
+@keyframes fadeOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Carte modale */
+.annee-dialog {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.25);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  animation: slideDialog 0.18s ease-out;
+}
+
+@keyframes slideDialog {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+/* En-tête dialogue */
+.annee-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-6);
+  background: var(--color-navy);
+  color: var(--color-white);
+}
+
+.annee-dialog__title {
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  margin: 0;
+}
+
+.annee-dialog__close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: var(--text-lg);
+  cursor: pointer;
+  padding: 0 var(--space-1);
+  line-height: 1;
+  transition: color var(--transition-fast);
+}
+.annee-dialog__close:hover { color: var(--color-white); }
+
+/* Corps dialogue */
+.annee-dialog__body {
+  padding: var(--space-6);
+}
+
+/* Bloc info résultat N + dates exercice suivant */
+.annee-dialog__info {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.annee-dialog__info-row {
+  font-size: var(--text-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+/* Note affectation comptable */
+.annee-dialog__note {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border-light);
+  padding-top: var(--space-2);
+  margin-top: var(--space-1);
+  line-height: 1.55;
+}
+
+.annee-dialog__note strong {
+  color: var(--color-text-primary);
+}
+
+/* Question */
+.annee-dialog__question {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-4);
+}
+
+/* Boutons orientation */
+.annee-dialog__orientations {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.annee-dialog__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+  text-align: center;
+}
+
+.annee-dialog__btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.annee-dialog__btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(46, 95, 163, 0.2);
+}
+
+.annee-dialog__btn-icon  { font-size: 1.6rem; line-height: 1; }
+.annee-dialog__btn-label { font-size: var(--text-sm); font-weight: var(--weight-bold); }
+.annee-dialog__btn-hint  { font-size: var(--text-xs); color: var(--color-text-muted); }
+
+/* Couleurs par orientation */
+.annee-dialog__btn--positif {
+  border-color: #b6e0c8;
+}
+.annee-dialog__btn--positif:hover {
+  border-color: #27ae60;
+  background: #f0faf5;
+}
+
+.annee-dialog__btn--neutre {
+  border-color: #c5cfe8;
+}
+.annee-dialog__btn--neutre:hover {
+  border-color: var(--color-accent);
+  background: #f0f4fc;
+}
+
+.annee-dialog__btn--negatif {
+  border-color: #f0c4be;
+}
+.annee-dialog__btn--negatif:hover {
+  border-color: #e74c3c;
+  background: #fdf5f4;
 }
