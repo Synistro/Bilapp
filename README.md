@@ -1,4 +1,4 @@
-# Bilapp
+# README — Bilapp
 
 Générateur de documents comptables français fictifs à des fins pédagogiques.
 
@@ -18,10 +18,16 @@ Tous les documents portent la mention obligatoire **"DOCUMENT FICTIF — À DES 
 
 ### Génération de documents
 - **Formulaire guidé** en 4 étapes : identité société, taille, structure financière, documents souhaités
+- **Niveaux de granularité** pour les immobilisations (aucune / matériel léger / standard / lourd) et les stocks (aucun / marchandises / marchandises+MP / complet) — permettent des cas pédagogiques ciblés
 - **Moteur de calcul** conforme PCG 2024 — ratios sectoriels, IS PME, trésorerie équilibrée automatiquement
 - **Bilan actif/passif** et **compte de résultat** avec colonnes N et N-1 optionnelles
 - **Annexe comptable** — immobilisations, amortissements, capitaux propres, méthodes
 - **Liasse fiscale complète** — 12 imprimés Cerfa 2050 à 2059-A avec codes lignes exacts
+
+### Hints comptables
+- **Icône ⓘ** sur chaque poste du bilan et du CR — tooltip au survol (desktop) ou au tap (mobile)
+- Définitions courtes orientées élèves, avec exemples concrets
+- **Masqués à l'impression** — les documents imprimés restent propres
 
 ### Analyse financière
 - **Onglet Analyse** — FR, BFR, Trésorerie Nette, SIG complet (VA, EBE, EBIT, RCAI), CAF
@@ -36,9 +42,9 @@ Tous les documents portent la mention obligatoire **"DOCUMENT FICTIF — À DES 
 ### Édition et workflow
 - **Édition inline** — cliquer sur n'importe quel poste pour le modifier ; les totaux se recalculent en cascade et le bilan reste équilibré
 - **Verrouillage de postes** — les valeurs modifiées sont protégées (🔒) et résistent aux recalculs
-- **Régénérer** — relance le moteur en conservant les postes verrouillés
-- **📅 Année suivante** — duplique le bilan courant en N-1 figé et génère un nouvel exercice N
-- **Sauvegarde / Chargement de session** — export `.json` complet, rechargeable depuis l'accueil
+- **Régénérer** — relance le moteur en conservant les postes verrouillés et le N-1 figé
+- **📅 Année suivante** — duplique le bilan courant en N-1 figé, génère un exercice N+1 avec un CA ancré sur le CA réel N (±15%), dates en heure locale pour éviter les décalages UTC
+- **Sauvegarde / Chargement de session** — export `.json` complet (format v4.0), rechargeable depuis l'accueil ; migration automatique des sessions v1–v3
 - **Export PDF** via impression navigateur
 
 ---
@@ -51,25 +57,40 @@ Modules ES6 natifs (`type="module"`).
 ```
 js/
   core/
-    constants.js    ← PCG 2024, ratios, taux, VILLES_FR
-    engine.js       ← moteur de calcul (fonctions pures)
+    constants.js    ← PCG 2024, ratios, taux, NIVEAUX_IMMOS, NIVEAUX_STOCKS, VILLES_FR
+    engine.js       ← moteur de calcul (fonctions pures) — caBaseN pour cohérence interannuelle
+    hints.js        ← définitions courtes des postes (tooltips élèves)
     validator.js    ← règles de cohérence comptable (V01-V06)
     overrides.js    ← registre des postes verrouillés
     reconcile.js    ← recalcul en cascade post-édition
   modules/
-    form.js         ← formulaire multi-étapes (BilanParams)
-    bilan.js        ← renderer bilan + édition inline + actions
+    form.js         ← formulaire multi-étapes — radio-groups niveaux immos/stocks
+    bilan.js        ← renderer bilan + édition inline + actions + année suivante
     resultat.js     ← renderer compte de résultat
     annexe.js       ← renderer annexe comptable
     liasse.js       ← renderer liasse fiscale (12 imprimés Cerfa)
     ratios.js       ← calcul et rendu analyse financière
   utils/
-    doc-helpers.js  ← formatage, buildHeader, buildTabs
+    doc-helpers.js  ← formatage, buildHeader, buildTabs, hintIcon()
+    tooltip.js      ← gestion hover/tap des tooltips hints (délégation document)
     identite.js     ← génération SIRET/SIREN (Luhn) + adresse fictive
   export/
     pdf.js          ← export PDF via window.print()
-    session.js      ← save/load session JSON (v2.0)
+    session.js      ← save/load session JSON (v4.0) + migration v1–v3
 ```
+
+---
+
+## Format de session
+
+| Version | Changement |
+|---------|------------|
+| v1.0 | Format initial |
+| v2.0 | Champs dates exercice (dateDebut/dateFin) |
+| v3.0 | dataN1Figee + dureeExerciceMois |
+| v4.0 | niveauImmos + niveauStocks (remplace booléens hasImmobilisations/hasStocks) |
+
+Les sessions v1–v3 sont migrées automatiquement au chargement.
 
 ---
 
@@ -98,8 +119,10 @@ npx serve .
 | P8 | Liasse fiscale Cerfa 2050–2059-A | ✅ |
 | P9a | Analyse financière (FR/BFR/SIG/CAF/ratios) | ✅ |
 | P9c | SIRET/SIREN fictifs (Luhn) + adresse fictive | ✅ |
-| P9d | Duplication année suivante + session v2.0 | ✅ |
-| P10 | Exercices décalés (date début/fin libre) | 🟡 En cours |
+| P9d | Duplication année suivante + session v3.0 | ✅ |
+| P10 | Exercices décalés (date début/fin libre, F54) | ✅ |
+| F64/F65 | Granularité immos/stocks (4 niveaux) — session v4.0 | ✅ |
+| Hints | Tooltips comptables élèves sur bilan + CR | ✅ |
 
 ---
 
