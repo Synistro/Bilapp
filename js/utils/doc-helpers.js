@@ -194,7 +194,7 @@ export function buildHeader(meta, titre) {
 
 /**
  * Construit les onglets de navigation entre documents.
- * @param {string} active   Onglet actif : 'bilan' | 'resultat' | 'annexe' | 'liasse' | 'analyse'
+ * @param {string} active   Onglet actif : 'bilan' | 'resultat' | 'annexe' | 'liasse' | 'analyse' | 'teledec'
  * @param {object} output   BilanParams.output
  * @returns {string}        HTML
  */
@@ -205,6 +205,7 @@ export function buildTabs(active, output) {
   if (output.annexe)         tabs.push({ id: 'annexe',   label: 'Annexe' });
   if (output.liasseFiscale)  tabs.push({ id: 'liasse',   label: 'Liasse fiscale' });
   if (output.analyse)        tabs.push({ id: 'analyse',  label: 'Analyse' });
+  if (output.teledec)        tabs.push({ id: 'teledec',  label: 'Télédéclaration' });
 
   return `
     <div class="doc-tabs" role="tablist">

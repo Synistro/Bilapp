@@ -108,6 +108,7 @@ function _defaultParams() {
       liasseFiscale:  false,
       compareN1:      false,
       analyse:        false,
+      teledec:        false,
     },
   };
 }
@@ -303,6 +304,7 @@ function _fillFormFromParams(step) {
     _setToggle('liasseFiscale',  _params.output.liasseFiscale);
     _setToggle('compareN1',      _params.output.compareN1);
     _setToggle('analyse',        _params.output.analyse);
+    _setToggle('teledec',        _params.output.teledec);
   }
 }
 
@@ -700,6 +702,17 @@ function _buildStep4() {
           </label>
         </div>
 
+        <div class="toggle-item">
+          <div class="toggle-item__text">
+            <span class="toggle-item__label">Télédéclaration (Teledec)</span>
+            <span class="toggle-item__hint">Dépôt EDI-TDFC de la liasse à la DGFiP — contrôles + accusé</span>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="teledec" name="teledec" />
+            <span class="toggle-switch__track"></span>
+          </label>
+        </div>
+
       </div>
     </div>
 
@@ -849,6 +862,7 @@ function _collectStep(step) {
     _params.output.liasseFiscale  = _getToggle('liasseFiscale');
     _params.output.compareN1      = _getToggle('compareN1');
     _params.output.analyse        = _getToggle('analyse');
+    _params.output.teledec        = _getToggle('teledec');
   }
 }
 

@@ -679,7 +679,7 @@ function buildLigneEch(code, libelle, montant) {
  * @param {object} data   BilanData
  * @returns {{ reintegrations: number, deductions: number, resultatFiscal: number, isRecalcule: number }}
  */
-function calcFiscal(data) {
+export function calcFiscal(data) {
   const r  = data.resultat;
   const ce = r.chargesExploitation;
 

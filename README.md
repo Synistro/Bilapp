@@ -33,6 +33,12 @@ Tous les documents portent la mention obligatoire **"DOCUMENT FICTIF — À DES 
 - **Onglet Analyse** — FR, BFR, Trésorerie Nette, SIG complet (VA, EBE, EBIT, RCAI), CAF
 - **Ratios** — ROE, ROA, marge nette, autonomie financière avec interprétations contextuelles
 
+### Télédéclaration (Teledec)
+- **Onglet Télédéclaration** — simule le dépôt de la liasse fiscale à la DGFiP en mode **EDI-TDFC**, via un partenaire EDI agréé (type Teledec.fr)
+- **Contrôles de cohérence EDI** — équilibre du bilan, cohérence résultat CR ↔ bilan, SIRET valide, période renseignée ; un bilan déséquilibré déclenche un **rejet de dépôt** pédagogique
+- **Données transmises** — CA, résultat comptable/fiscal, IS dû, total bilan extraits automatiquement de la liasse
+- **Accusé de réception DGFiP** fictif — numéro de dépôt déterministe (`TDFC-AAAA-XXXXXXXX`), statut ACCEPTÉ / REFUSÉ
+
 ### Réalisme pédagogique
 - **SIRET/SIREN fictifs** générés par algorithme Luhn — valides mais non réels
 - **Adresse postale fictive** cohérente (ville + code postal français)
@@ -69,6 +75,7 @@ js/
     resultat.js     ← renderer compte de résultat
     annexe.js       ← renderer annexe comptable
     liasse.js       ← renderer liasse fiscale (12 imprimés Cerfa)
+    teledec.js      ← renderer télédéclaration EDI-TDFC (réutilise calcFiscal de liasse.js)
     ratios.js       ← calcul et rendu analyse financière
   utils/
     doc-helpers.js  ← formatage, buildHeader, buildTabs, hintIcon()
@@ -123,6 +130,7 @@ npx serve .
 | P10 | Exercices décalés (date début/fin libre, F54) | ✅ |
 | F64/F65 | Granularité immos/stocks (4 niveaux) — session v4.0 | ✅ |
 | Hints | Tooltips comptables élèves sur bilan + CR | ✅ |
+| Teledec | Télédéclaration EDI-TDFC (contrôles + accusé DGFiP) | ✅ |
 
 ---
 

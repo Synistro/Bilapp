@@ -14,6 +14,7 @@ import { fmt, zeroCls, buildHeader, buildTabs, hintIcon } from '../utils/doc-hel
 import { buildResultat }                                  from './resultat.js';
 import { buildAnnexe }                                    from './annexe.js';
 import { buildAnalyse }                                   from './ratios.js';
+import { buildTeledec }                                   from './teledec.js';
 import { setOverride, isLocked, getOverrides, clearOverrides, countOverrides } from '../core/overrides.js';
 import { reconcile }                                      from '../core/reconcile.js';
 import { exportDocument }                                 from '../export/pdf.js';
@@ -578,7 +579,7 @@ function renderTab(tab, desequilibre = 0) {
   _currentTab = tab;
   const app   = document.getElementById('app');
 
-  const titres = { bilan: 'Bilan comptable', resultat: 'Compte de résultat', annexe: 'Annexe comptable', liasse: 'Liasse fiscale', analyse: 'Analyse financière' };
+  const titres = { bilan: 'Bilan comptable', resultat: 'Compte de résultat', annexe: 'Annexe comptable', liasse: 'Liasse fiscale', analyse: 'Analyse financière', teledec: 'Télédéclaration EDI-TDFC' };
 
   let content = '';
   if (tab === 'bilan') {
@@ -597,6 +598,8 @@ function renderTab(tab, desequilibre = 0) {
     content = buildLiasse(_currentData, _currentParams);
   } else if (tab === 'analyse') {
     content = buildAnalyse(_currentData, _currentParams);
+  } else if (tab === 'teledec') {
+    content = buildTeledec(_currentData, _currentParams);
   }
 
   const btnAnneeSuivanteHtml = !_dataN1Figee
@@ -661,7 +664,8 @@ export function renderDocuments(data, params) {
     params.output.bilan          ? 'bilan'    :
     params.output.compteResultat ? 'resultat' :
     params.output.annexe         ? 'annexe'   :
-    params.output.analyse        ? 'analyse'  : 'liasse',
+    params.output.analyse        ? 'analyse'  :
+    params.output.liasseFiscale  ? 'liasse'   : 'teledec',
     0
   );
 }
