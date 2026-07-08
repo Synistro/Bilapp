@@ -256,8 +256,9 @@ export const COMPTES_POSTES = {
   provisionsRisques:  '151',
   provisionsCharges:  '158',
   // Passif — dettes
-  emprunts:           '164',
-  fournisseurs:       '401',
+  emprunts:                '164',
+  comptesCourantsAssocies: '455',
+  fournisseurs:            '401',
   fiscalesSociales:   '44',
   autresDettes:       '46',
   // Comptes de régularisation — passif

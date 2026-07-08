@@ -273,6 +273,7 @@ function buildPassif(bilan, n1) {
 
           <tr class="row--section"><td colspan="${cols}">Dettes</td></tr>
           ${rowPassif('Emprunts et dettes financières',    p.dettes.emprunts,         `${b}.dettes.emprunts`,         n1v(x=>x.dettes.emprunts),         true, 'emprunts')}
+          ${rowPassif('Comptes courants d\'associés',       p.dettes.comptesCourantsAssocies ?? 0, `${b}.dettes.comptesCourantsAssocies`, n1v(x=>x.dettes.comptesCourantsAssocies ?? 0), true, 'comptesCourantsAssocies')}
           ${rowPassif('Fournisseurs et comptes rattachés', p.dettes.fournisseurs,     `${b}.dettes.fournisseurs`,     n1v(x=>x.dettes.fournisseurs),     true, 'fournisseurs')}
           ${rowPassif('Dettes fiscales et sociales',       p.dettes.fiscalesSociales, `${b}.dettes.fiscalesSociales`, n1v(x=>x.dettes.fiscalesSociales), true, 'fiscalesSociales')}
           ${rowPassif('Autres dettes',                     p.dettes.autresDettes,     `${b}.dettes.autresDettes`,     n1v(x=>x.dettes.autresDettes),     true, 'autresDettes')}

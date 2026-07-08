@@ -209,7 +209,7 @@ function recalculerTotauxPassif(passif) {
   const cp = passif.capitauxPropres;
   cp.total = Math.round(cp.capital + cp.primesEmission + cp.reserveLegale + cp.autresReserves + cp.reportANouveau + cp.resultat);
   passif.provisions.total     = Math.round(passif.provisions.risques + passif.provisions.charges);
-  passif.dettes.total         = Math.round(passif.dettes.emprunts + passif.dettes.fournisseurs + passif.dettes.fiscalesSociales + passif.dettes.autresDettes);
+  passif.dettes.total         = Math.round(passif.dettes.emprunts + (passif.dettes.comptesCourantsAssocies || 0) + passif.dettes.fournisseurs + passif.dettes.fiscalesSociales + passif.dettes.autresDettes);
   passif.regularisation.total = Math.round(passif.regularisation.produitsConstates);
   passif.total = Math.round(cp.total + passif.provisions.total + passif.dettes.total + passif.regularisation.total);
 }

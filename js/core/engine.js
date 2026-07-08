@@ -273,11 +273,14 @@ function calculerPassif(params, ca, resultatNet) {
   const charges   = varier(ca * randFloat(0.002, 0.01));
   const totalProv = Math.round(risques + charges);
 
-  const emprunts         = params.finance.hasDettesBancaires ? varier(ca * randFloat(0.10, 0.40)) : 0;
-  const fournisseurs     = varier(ca * randFloat(ratios.dettes_fournisseurs.min, ratios.dettes_fournisseurs.max));
-  const fiscalesSociales = varier(ca * randFloat(0.02, 0.06));
-  const autresDettes     = varier(ca * randFloat(0.01, 0.04));
-  const totalDettes      = Math.round(emprunts + fournisseurs + fiscalesSociales + autresDettes);
+  const emprunts                = params.finance.hasDettesBancaires ? varier(ca * randFloat(0.10, 0.40)) : 0;
+  // Comptes courants d'associés — fréquent en TPE/PME, un peu plus marqué en SARL/SAS
+  const facteurCCA              = formeJuridique === 'SA' ? 0.5 : 1;
+  const comptesCourantsAssocies = varier(ca * randFloat(0.01, 0.06) * facteurCCA);
+  const fournisseurs            = varier(ca * randFloat(ratios.dettes_fournisseurs.min, ratios.dettes_fournisseurs.max));
+  const fiscalesSociales        = varier(ca * randFloat(0.02, 0.06));
+  const autresDettes            = varier(ca * randFloat(0.01, 0.04));
+  const totalDettes             = Math.round(emprunts + comptesCourantsAssocies + fournisseurs + fiscalesSociales + autresDettes);
 
   const produitsConstates = varier(ca * randFloat(0.002, 0.01));
   const totalRegul        = Math.round(produitsConstates);
@@ -286,7 +289,7 @@ function calculerPassif(params, ca, resultatNet) {
   return {
     capitauxPropres: { capital, primesEmission, reserveLegale, autresReserves, reportANouveau, resultat: resultatNet, total: totalCP },
     provisions:      { risques, charges, total: totalProv },
-    dettes:          { emprunts, fournisseurs, fiscalesSociales, autresDettes, total: totalDettes },
+    dettes:          { emprunts, comptesCourantsAssocies, fournisseurs, fiscalesSociales, autresDettes, total: totalDettes },
     regularisation:  { produitsConstates, total: totalRegul },
     total,
   };

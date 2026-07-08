@@ -114,6 +114,8 @@ export const HINTS = {
   // ============================================================
   emprunts:
     'Emprunts bancaires à rembourser (moyen/long terme).',
+  comptesCourantsAssocies:
+    'Sommes prêtées par les associés à la société, remboursables (apports en compte courant).',
   fournisseurs:
     'Factures reçues mais pas encore payées aux fournisseurs.',
   fiscalesSociales:

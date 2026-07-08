@@ -30,11 +30,12 @@ function calculerIndicateurs(data) {
   const { bilan, resultat } = data;
   const { actif, passif }   = bilan;
 
-  // ── Capitaux permanents = Capitaux propres + Provisions + Dettes LT (emprunts)
-  // Les emprunts bancaires sont assimilés à des ressources stables.
+  // ── Capitaux permanents = Capitaux propres + Provisions + Dettes LT (emprunts
+  //    + comptes courants d'associés, assimilés à des ressources stables).
   const capitauxPermanents = passif.capitauxPropres.total
                            + passif.provisions.total
-                           + passif.dettes.emprunts;
+                           + passif.dettes.emprunts
+                           + (passif.dettes.comptesCourantsAssocies || 0);
 
   const actifImmobiliseNet = actif.immobilise.total.net;
 
@@ -223,7 +224,7 @@ export function buildAnalyse(data, params) {
             <tr>
               <td>Capitaux permanents</td>
               <td>${fmt(ind.capitauxPermanents)}</td>
-              <td class="col--hint">CP + Prov. + Emprunts LT</td>
+              <td class="col--hint">CP + Prov. + Emprunts + CC associés</td>
             </tr>
             <tr>
               <td>Actif immobilisé net</td>

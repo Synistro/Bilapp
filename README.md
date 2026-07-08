@@ -47,6 +47,7 @@ Tous les documents portent la mention obligatoire **"DOCUMENT FICTIF — À DES 
 - **Accusé de réception DGFiP** fictif — numéro de dépôt déterministe (`TDFC-AAAA-XXXXXXXX`), statut ACCEPTÉ / REFUSÉ
 
 ### Réalisme pédagogique
+- **Comptes courants d'associés** (compte 455) au passif — dette de la société envers ses associés, fréquente en TPE/PME ; comptée en ressource stable dans l'analyse financière
 - **SIRET/SIREN fictifs** générés par algorithme Luhn — valides mais non réels
 - **Adresse postale fictive** cohérente (ville + code postal français)
 - Résultat net jamais nul — randomisé pour éviter les cas trop parfaits

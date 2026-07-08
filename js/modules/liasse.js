@@ -252,7 +252,7 @@ function build2051(data) {
           ${lr('DP', 'Emprunts obligataires convertibles',         0)}
           ${lr('DQ', 'Autres emprunts obligataires',               0)}
           ${lr('DR', 'Emprunts et dettes auprès des établissements de crédit' + compteBadge('emprunts'), dt.emprunts)}
-          ${lr('DS', 'Emprunts et dettes financières divers',      0)}
+          ${lr('DS', 'Emprunts et dettes financières divers (dont comptes courants d\'associés)' + compteBadge('comptesCourantsAssocies'), dt.comptesCourantsAssocies ?? 0)}
           ${lr('DT', 'Avances et acomptes reçus sur commandes',    0)}
           ${lr('DU', 'Dettes fournisseurs et comptes rattachés'   + compteBadge('fournisseurs'),      dt.fournisseurs)}
           ${lr('DV', 'Dettes fiscales et sociales'                + compteBadge('fiscalesSociales'),  dt.fiscalesSociales)}
