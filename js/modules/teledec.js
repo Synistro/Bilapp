@@ -174,6 +174,11 @@ function _controles(data) {
       detail: ecartBilan === 0
         ? `${euro(actifNet)} = ${euro(passifTot)}`
         : `écart de ${euro(ecartBilan)}`,
+      aide: {
+        quoi:     'Le total de l\'actif (ce que l\'entreprise possède) doit être strictement égal au total du passif (ses ressources : capital, réserves, dettes).',
+        pourquoi: 'La comptabilité tient en « partie double » : chaque emploi d\'argent a une origine. Un écart, même de 1 €, signale une écriture incomplète ou une saisie erronée. La DGFiP refuse automatiquement toute liasse déséquilibrée.',
+        corriger: 'Dans l\'onglet Bilan, repérez un poste verrouillé (🔒) : une valeur forcée à la main empêche la trésorerie d\'absorber l\'écart. Déverrouillez-le, ou ajustez un poste du passif pour retomber sur le total de l\'actif.',
+      },
     },
     {
       label:  'Cohérence résultat — compte de résultat / bilan',
@@ -181,25 +186,69 @@ function _controles(data) {
       detail: ecartRes === 0
         ? `Résultat net ${euro(resCR)} reporté au passif`
         : `écart de ${euro(ecartRes)}`,
+      aide: {
+        quoi:     'Le résultat net calculé en bas du compte de résultat doit apparaître à l\'identique dans les capitaux propres du bilan, à la ligne « Résultat de l\'exercice ».',
+        pourquoi: 'Le bilan et le compte de résultat décrivent la même entreprise sur le même exercice : le bénéfice (ou la perte) de l\'année est leur point commun obligatoire. Une divergence trahit une incohérence entre les deux états.',
+        corriger: 'Reportez le résultat net du compte de résultat dans la ligne « Résultat de l\'exercice » au passif du bilan (capitaux propres).',
+      },
     },
     {
       label:  'Chiffre d\'affaires renseigné',
       ok:     data.resultat.produitsExploitation.ca > 0,
       detail: euro(data.resultat.produitsExploitation.ca),
+      aide: {
+        quoi:     'La déclaration doit porter un chiffre d\'affaires : les ventes de marchandises ou les prestations facturées sur l\'exercice.',
+        pourquoi: 'Une déclaration de résultat sans aucun chiffre d\'affaires est presque toujours une erreur de saisie ; l\'administration la considère comme incomplète.',
+        corriger: 'Vérifiez dans le compte de résultat que le chiffre d\'affaires (production vendue / ventes de marchandises) n\'est pas nul.',
+      },
     },
     {
       label:  'Identifiant SIRET valide (14 chiffres)',
       ok:     !!data.meta.siret && data.meta.siret.length === 14,
       detail: _fmtSIRET(data.meta.siret),
+      aide: {
+        quoi:     'Le SIRET est le numéro à 14 chiffres qui identifie précisément l\'établissement de l\'entreprise dans les fichiers de l\'administration.',
+        pourquoi: 'Sans SIRET valide, la DGFiP ne peut pas rattacher la déclaration à une entreprise connue : le dépôt est rejeté avant même l\'examen de son contenu.',
+        corriger: 'Le SIRET est généré automatiquement par Bilapp (algorithme de Luhn). Régénérez le dossier depuis l\'accueil si le champ est vide.',
+      },
     },
     {
       label:  'Période d\'exercice renseignée',
       ok:     !!data.meta.dateFin,
       detail: _periodeLigne(data.meta),
+      aide: {
+        quoi:     'La liasse porte sur un exercice comptable délimité par une date de début et une date de clôture.',
+        pourquoi: 'Une entreprise dépose une liasse par exercice : l\'administration doit savoir quelle période est déclarée. Sans dates, la déclaration n\'est pas exploitable.',
+        corriger: 'Renseignez la période de l\'exercice à l\'étape 1 du formulaire (dates de début et de fin).',
+      },
     },
   ];
 
   return { controles, toutOk: controles.every(c => c.ok) };
+}
+
+/**
+ * Bloc d'aide dépliable pour un contrôle (élément <details> natif — aucun JS
+ * à câbler, fonctionne avec l'injection innerHTML et à l'impression).
+ * Auto-ouvert quand le contrôle échoue, pour attirer l'œil de l'élève.
+ *
+ * @param {object} c  Un contrôle avec sa clé `aide`
+ * @returns {string}  HTML
+ */
+function _aideDetails(c) {
+  if (!c.aide) return '';
+  const openAttr = c.ok ? '' : ' open';
+  const libelle  = c.ok ? 'Comprendre ce contrôle' : 'Pourquoi ça bloque ?';
+  return `
+    <details class="td-explain${c.ok ? '' : ' is-ko'}"${openAttr}>
+      <summary class="td-explain__btn">${c.ok ? 'ⓘ' : '⚠'} ${libelle}</summary>
+      <div class="td-explain__body">
+        <p><span class="td-explain__tag">Ce que ça vérifie</span> ${c.aide.quoi}</p>
+        <p><span class="td-explain__tag">Pourquoi c'est bloquant</span> ${c.aide.pourquoi}</p>
+        <p><span class="td-explain__tag td-explain__tag--fix">Comment corriger</span> ${c.aide.corriger}</p>
+      </div>
+    </details>
+  `;
 }
 
 function buildControles(data) {
@@ -211,16 +260,19 @@ function buildControles(data) {
       <ul class="td-checks">
         ${controles.map(c => `
           <li class="td-check ${c.ok ? 'is-ok' : 'is-ko'}">
-            <span class="td-check__icon">${c.ok ? '✓' : '✕'}</span>
-            <span class="td-check__label">${c.label}</span>
-            <span class="td-check__detail">${c.detail}</span>
+            <div class="td-check__row">
+              <span class="td-check__icon">${c.ok ? '✓' : '✕'}</span>
+              <span class="td-check__label">${c.label}</span>
+              <span class="td-check__detail">${c.detail}</span>
+            </div>
+            ${_aideDetails(c)}
           </li>
         `).join('')}
       </ul>
       <div class="td-checks__verdict ${toutOk ? 'is-ok' : 'is-ko'}">
         ${toutOk
           ? '✓ Tous les contrôles sont passés — la déclaration peut être transmise.'
-          : '✕ Anomalies détectées — la DGFiP rejetterait ce dépôt. Corrigez le bilan avant transmission.'}
+          : '✕ Anomalies détectées — la DGFiP rejetterait ce dépôt. Dépliez « Pourquoi ça bloque ? » sur chaque ligne en rouge pour comprendre et corriger.'}
       </div>
     </div>
   `;
@@ -297,16 +349,29 @@ function buildWorkflow(toutOk) {
 // BLOC 6 — ACCUSÉ DE DÉPÔT DGFiP
 // ============================================================
 
-function buildAccuse(data, toutOk) {
-  const meta = data.meta;
+function buildAccuse(data, controles) {
+  const meta   = data.meta;
+  const echecs = controles.filter(c => !c.ok);
+  const toutOk = echecs.length === 0;
 
   if (!toutOk) {
     return `
       <div class="td-accuse is-rejet">
-        <div class="td-accuse__title">✕ Dépôt refusé</div>
+        <div class="td-accuse__title">✕ Dépôt refusé par la DGFiP</div>
         <div class="td-accuse__body">
-          Les contrôles de cohérence ont échoué. La DGFiP n'accepte pas la liasse en l'état.
-          Corrigez les anomalies signalées à l'étape 2, puis relancez le dépôt.
+          La télétransmission a été bloquée : ${echecs.length === 1 ? 'un contrôle de cohérence a échoué' : `${echecs.length} contrôles de cohérence ont échoué`}.
+          Un vrai partenaire EDI renverrait un compte-rendu de rejet (« CRM » négatif) listant les anomalies à corriger avant de redéposer.
+        </div>
+        <ul class="td-accuse__echecs">
+          ${echecs.map(c => `
+            <li>
+              <span class="td-accuse__echec-label">✕ ${c.label}</span>
+              ${c.aide ? `<span class="td-accuse__echec-fix">→ ${c.aide.corriger}</span>` : ''}
+            </li>
+          `).join('')}
+        </ul>
+        <div class="td-accuse__foot">
+          Corrigez ces points, revenez sur cet onglet : les contrôles sont réévalués automatiquement.
         </div>
       </div>
     `;
@@ -390,14 +455,41 @@ const TELEDEC_CSS = `
   }
 
   .td-checks { list-style: none; margin: 0; padding: 0.5rem 0; }
-  .td-check {
+  .td-check { padding: 0.35rem 1rem; font-size: 0.83rem; }
+  .td-check.is-ko { background: #fdf3f2; }
+  .td-check__row {
     display: grid; grid-template-columns: 1.5rem 1fr auto; align-items: center; gap: 0.6rem;
-    padding: 0.4rem 1rem; font-size: 0.83rem;
   }
   .td-check__icon { font-weight: 800; text-align: center; }
   .td-check.is-ok  .td-check__icon { color: #1e8449; }
   .td-check.is-ko  .td-check__icon { color: #c0392b; }
   .td-check__detail { color: var(--color-muted, #777); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+
+  /* Bouton d'aide dépliable (details/summary natif) */
+  .td-explain { margin: 0.4rem 0 0.2rem 2.1rem; }
+  .td-explain__btn {
+    display: inline-block; cursor: pointer; list-style: none;
+    font-size: 0.75rem; font-weight: 600; padding: 0.2rem 0.6rem; border-radius: 999px;
+    background: var(--color-surface-alt, #eef2f7); color: var(--color-primary, #1a5276);
+    border: 1px solid var(--color-border, #d5dde5); user-select: none;
+  }
+  .td-explain__btn::-webkit-details-marker { display: none; }
+  .td-explain__btn:hover { background: var(--color-border, #dde4ec); }
+  .td-explain.is-ko .td-explain__btn { background: #fbe3e0; color: #c0392b; border-color: #e6b0aa; }
+  .td-explain[open] .td-explain__btn { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .td-explain__body {
+    font-size: 0.8rem; line-height: 1.5; padding: 0.6rem 0.8rem; margin-top: -1px;
+    border: 1px solid var(--color-border, #d5dde5); border-radius: 0 6px 6px 6px;
+    background: var(--color-surface, #fff);
+  }
+  .td-explain__body p { margin: 0 0 0.5rem; }
+  .td-explain__body p:last-child { margin-bottom: 0; }
+  .td-explain__tag {
+    display: inline-block; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.03em; color: var(--color-muted, #777); margin-right: 0.35rem;
+  }
+  .td-explain__tag--fix { color: #1e8449; }
+
   .td-checks__verdict {
     padding: 0.6rem 1rem; font-size: 0.83rem; font-weight: 600; border-top: 1px solid var(--color-border, #eef1f5);
   }
@@ -432,6 +524,13 @@ const TELEDEC_CSS = `
   .td-accuse__ok { color: #1e8449; letter-spacing: 0.03em; }
   .td-accuse__body { font-size: 0.88rem; line-height: 1.5; }
   .td-accuse__foot { margin-top: 0.75rem; font-size: 0.75rem; font-style: italic; color: var(--color-muted, #777); }
+  .td-accuse__echecs { list-style: none; margin: 0.75rem 0 0; padding: 0; }
+  .td-accuse__echecs li {
+    background: #fff; border: 1px solid #e6b0aa; border-radius: 6px;
+    padding: 0.5rem 0.75rem; margin-bottom: 0.5rem;
+  }
+  .td-accuse__echec-label { display: block; font-weight: 700; color: #c0392b; font-size: 0.83rem; }
+  .td-accuse__echec-fix   { display: block; font-size: 0.8rem; line-height: 1.45; margin-top: 0.25rem; color: var(--color-text, #333); }
 
   .td-mention {
     text-align: center; font-size: 0.75rem; font-weight: 700; color: #c0392b;
@@ -455,7 +554,7 @@ const TELEDEC_CSS = `
  * @returns {string}       HTML pur
  */
 export function buildTeledec(data, params) {
-  const { toutOk } = _controles(data);
+  const { controles, toutOk } = _controles(data);
 
   return `
     <style>${TELEDEC_CSS}</style>
@@ -465,7 +564,7 @@ export function buildTeledec(data, params) {
       ${buildControles(data)}
       ${buildDonnees(data)}
       ${buildWorkflow(toutOk)}
-      ${buildAccuse(data, toutOk)}
+      ${buildAccuse(data, controles)}
       <div class="td-mention">${MENTION_FICTIF}</div>
     </div>
   `;

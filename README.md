@@ -36,6 +36,7 @@ Tous les documents portent la mention obligatoire **"DOCUMENT FICTIF — À DES 
 ### Télédéclaration (Teledec)
 - **Onglet Télédéclaration** — simule le dépôt de la liasse fiscale à la DGFiP en mode **EDI-TDFC**, via un partenaire EDI agréé (type Teledec.fr)
 - **Contrôles de cohérence EDI** — équilibre du bilan, cohérence résultat CR ↔ bilan, SIRET valide, période renseignée ; un bilan déséquilibré déclenche un **rejet de dépôt** pédagogique
+- **Boutons d'explication** sur chaque contrôle (« Pourquoi ça bloque ? / Comment corriger ? ») — auto-dépliés quand le contrôle échoue ; l'accusé de rejet liste les anomalies avec leur correction
 - **Données transmises** — CA, résultat comptable/fiscal, IS dû, total bilan extraits automatiquement de la liasse
 - **Accusé de réception DGFiP** fictif — numéro de dépôt déterministe (`TDFC-AAAA-XXXXXXXX`), statut ACCEPTÉ / REFUSÉ
 
