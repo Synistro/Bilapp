@@ -417,7 +417,7 @@
 .lock-toggle.is-on                            { opacity: 0.9; }   /* verrouillé : toujours visible */
 
 .doc-table tr.has-lock {
-  background: rgba(26, 44, 78, 0.03);
+  background: rgba(26, 44, 78, 0.08);
 }
 
 .cell-input {
