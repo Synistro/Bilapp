@@ -17,7 +17,7 @@
 'use strict';
 
 import { TAUX, MENTION_FICTIF } from '../core/constants.js';
-import { fmtDateFR }            from '../utils/doc-helpers.js';
+import { fmtDateFR, compteBadge } from '../utils/doc-helpers.js';
 
 // ============================================================
 // CONSTANTES LIASSE
@@ -156,44 +156,44 @@ function build2050(data) {
         <tbody>
           <tr class="lf-section"><td colspan="5">ACTIF IMMOBILISÉ</td></tr>
           <tr class="lf-subsection"><td colspan="5">Immobilisations incorporelles</td></tr>
-          ${lr('AA', 'Frais d\'établissement',                     ii.fraisEtablissement.brut, ii.fraisEtablissement.amort, ii.fraisEtablissement.net)}
-          ${lr('AB', 'Frais de recherche et développement',        ii.fraisRD.brut,            ii.fraisRD.amort,            ii.fraisRD.net)}
-          ${lr('AC', 'Concessions, brevets, droits similaires',    ii.brevets.brut,            ii.brevets.amort,            ii.brevets.net)}
-          ${lr('AD', 'Fonds commercial',                           ii.fondsCommercial.brut,    ii.fondsCommercial.amort,    ii.fondsCommercial.net)}
-          ${lr('AE', 'Autres immobilisations incorporelles',       ii.autresIncorporel.brut,   ii.autresIncorporel.amort,   ii.autresIncorporel.net)}
+          ${lr('AA', 'Frais d\'établissement'                    + compteBadge('fraisEtablissement'), ii.fraisEtablissement.brut, ii.fraisEtablissement.amort, ii.fraisEtablissement.net)}
+          ${lr('AB', 'Frais de recherche et développement'       + compteBadge('fraisRD'),            ii.fraisRD.brut,            ii.fraisRD.amort,            ii.fraisRD.net)}
+          ${lr('AC', 'Concessions, brevets, droits similaires'   + compteBadge('brevets'),            ii.brevets.brut,            ii.brevets.amort,            ii.brevets.net)}
+          ${lr('AD', 'Fonds commercial'                          + compteBadge('fondsCommercial'),    ii.fondsCommercial.brut,    ii.fondsCommercial.amort,    ii.fondsCommercial.net)}
+          ${lr('AE', 'Autres immobilisations incorporelles'      + compteBadge('autresIncorporel'),   ii.autresIncorporel.brut,   ii.autresIncorporel.amort,   ii.autresIncorporel.net)}
           ${lt('AF', 'Avances et acomptes',                        0,                          0,                           0)}
           <tr class="lf-subsection"><td colspan="5">Immobilisations corporelles</td></tr>
-          ${lr('AG', 'Terrains',                                   ic.terrains.brut,           ic.terrains.amort,           ic.terrains.net)}
-          ${lr('AH', 'Constructions',                              ic.constructions.brut,      ic.constructions.amort,      ic.constructions.net)}
-          ${lr('AI', 'Installations techniques, matériel, outillage', ic.installations.brut,   ic.installations.amort,      ic.installations.net)}
-          ${lr('AJ', 'Autres immobilisations corporelles',         ic.autresCorporel.brut,     ic.autresCorporel.amort,     ic.autresCorporel.net)}
+          ${lr('AG', 'Terrains'                                  + compteBadge('terrains'),       ic.terrains.brut,           ic.terrains.amort,           ic.terrains.net)}
+          ${lr('AH', 'Constructions'                             + compteBadge('constructions'),  ic.constructions.brut,      ic.constructions.amort,      ic.constructions.net)}
+          ${lr('AI', 'Installations techniques, matériel, outillage' + compteBadge('installations'), ic.installations.brut,   ic.installations.amort,      ic.installations.net)}
+          ${lr('AJ', 'Autres immobilisations corporelles'        + compteBadge('autresCorporel'), ic.autresCorporel.brut,     ic.autresCorporel.amort,     ic.autresCorporel.net)}
           ${lt('AK', 'Immobilisations en cours',                   0,                          0,                           0)}
           ${lt('AL', 'Avances et acomptes',                        0,                          0,                           0)}
           <tr class="lf-subsection"><td colspan="5">Immobilisations financières</td></tr>
           ${lr('AM', 'Participations évaluées par équivalence',    0,                          0,                           0)}
-          ${lr('AN', 'Autres participations',                      ifin.participations.brut,   ifin.participations.amort,   ifin.participations.net)}
+          ${lr('AN', 'Autres participations'                     + compteBadge('participations'), ifin.participations.brut,   ifin.participations.amort,   ifin.participations.net)}
           ${lr('AO', 'Créances rattachées à des participations',   0,                          0,                           0)}
           ${lr('AP', 'Autres titres immobilisés',                  0,                          0,                           0)}
           ${lr('AQ', 'Prêts',                                      0,                          0,                           0)}
-          ${lr('AR', 'Autres immobilisations financières',         ifin.autresFinancier.brut,  ifin.autresFinancier.amort,  ifin.autresFinancier.net)}
+          ${lr('AR', 'Autres immobilisations financières'        + compteBadge('autresFinancier'), ifin.autresFinancier.brut,  ifin.autresFinancier.amort,  ifin.autresFinancier.net)}
           ${lt('AS', 'TOTAL ACTIF IMMOBILISÉ (I)',                 immoB,                      immoA,                       immoN, 'lf-total')}
 
           <tr class="lf-section"><td colspan="5">ACTIF CIRCULANT</td></tr>
           <tr class="lf-subsection"><td colspan="5">Stocks et en-cours</td></tr>
-          ${lr('BA', 'Matières premières, approv.',                st.matieresPremières.brut,  st.matieresPremières.amort,  st.matieresPremières.net)}
-          ${lr('BB', 'En-cours de production (biens)',             st.enCours.brut,            st.enCours.amort,            st.enCours.net)}
+          ${lr('BA', 'Matières premières, approv.'               + compteBadge('matieresPremières'), st.matieresPremières.brut,  st.matieresPremières.amort,  st.matieresPremières.net)}
+          ${lr('BB', 'En-cours de production (biens)'            + compteBadge('enCours'),           st.enCours.brut,            st.enCours.amort,            st.enCours.net)}
           ${lr('BC', 'En-cours de production (services)',          0,                          0,                           0)}
-          ${lr('BD', 'Produits intermédiaires et finis',           st.produitsFinis.brut,      st.produitsFinis.amort,      st.produitsFinis.net)}
-          ${lr('BE', 'Marchandises',                               st.marchandises.brut,       st.marchandises.amort,       st.marchandises.net)}
+          ${lr('BD', 'Produits intermédiaires et finis'          + compteBadge('produitsFinis'),     st.produitsFinis.brut,      st.produitsFinis.amort,      st.produitsFinis.net)}
+          ${lr('BE', 'Marchandises'                              + compteBadge('marchandises'),      st.marchandises.brut,       st.marchandises.amort,       st.marchandises.net)}
           ${lt('BF', 'Avances et acomptes versés / commandes',     0,                          0,                           0)}
           <tr class="lf-subsection"><td colspan="5">Créances</td></tr>
-          ${lr('BG', 'Clients et comptes rattachés',               cr.clients.brut,            cr.clients.amort,            cr.clients.net)}
-          ${lr('BH', 'Autres créances',                            cr.autresCreances.brut,     cr.autresCreances.amort,     cr.autresCreances.net)}
+          ${lr('BG', 'Clients et comptes rattachés'              + compteBadge('clients'),           cr.clients.brut,            cr.clients.amort,            cr.clients.net)}
+          ${lr('BH', 'Autres créances'                           + compteBadge('autresCreances'),    cr.autresCreances.brut,     cr.autresCreances.amort,     cr.autresCreances.net)}
           <tr class="lf-subsection"><td colspan="5">Divers</td></tr>
           ${lr('BI', 'Capital souscrit, appelé, non versé',        0,                          0,                           0)}
-          ${lr('BJ', 'Valeurs mobilières de placement',            di.vmp.brut,                di.vmp.amort,                di.vmp.net)}
-          ${lr('BK', 'Disponibilités',                             di.banqueCaisse.brut,       di.banqueCaisse.amort,       di.banqueCaisse.net)}
-          ${lr('BL', 'Charges constatées d\'avance',               rg.chargesConstatees.brut,  rg.chargesConstatees.amort,  rg.chargesConstatees.net)}
+          ${lr('BJ', 'Valeurs mobilières de placement'          + compteBadge('vmp'),               di.vmp.brut,                di.vmp.amort,                di.vmp.net)}
+          ${lr('BK', 'Disponibilités'                           + compteBadge('banqueCaisse'),      di.banqueCaisse.brut,       di.banqueCaisse.amort,       di.banqueCaisse.net)}
+          ${lr('BL', 'Charges constatées d\'avance'             + compteBadge('chargesConstatees'), rg.chargesConstatees.brut,  rg.chargesConstatees.amort,  rg.chargesConstatees.net)}
           ${lt('BN', 'TOTAL ACTIF CIRCULANT (II)',                  circB,                      0,                           circN + rgN, 'lf-total')}
           ${lt('CD', 'TOTAL GÉNÉRAL (I + II)',                     totalB,                     totalA,                      totalN, 'lf-grandtotal')}
         </tbody>
@@ -230,35 +230,35 @@ function build2051(data) {
         </thead>
         <tbody>
           <tr class="lf-section"><td colspan="3">CAPITAUX PROPRES</td></tr>
-          ${lr('CA', 'Capital social ou individuel',               cp.capital)}
-          ${lr('CB', 'Primes d\'émission, de fusion…',             cp.primesEmission)}
+          ${lr('CA', 'Capital social ou individuel'              + compteBadge('capital'),        cp.capital)}
+          ${lr('CB', 'Primes d\'émission, de fusion…'            + compteBadge('primesEmission'), cp.primesEmission)}
           ${lr('CC', 'Écarts de réévaluation',                     0)}
-          ${lr('CD', 'Réserve légale',                             cp.reserveLegale)}
+          ${lr('CD', 'Réserve légale'                            + compteBadge('reserveLegale'),  cp.reserveLegale)}
           ${lr('CE', 'Réserves statutaires ou contractuelles',     0)}
           ${lr('CF', 'Réserves réglementées',                      0)}
-          ${lr('CG', 'Autres réserves',                            cp.autresReserves)}
-          ${lr('CH', 'Report à nouveau',                           cp.reportANouveau)}
-          ${lr('DI', cp.resultat >= 0 ? 'Résultat de l\'exercice (bénéfice)' : 'Résultat de l\'exercice (perte)', cp.resultat)}
+          ${lr('CG', 'Autres réserves'                           + compteBadge('autresReserves'), cp.autresReserves)}
+          ${lr('CH', 'Report à nouveau'                          + compteBadge('reportANouveau'), cp.reportANouveau)}
+          ${lr('DI', (cp.resultat >= 0 ? 'Résultat de l\'exercice (bénéfice)' : 'Résultat de l\'exercice (perte)') + compteBadge('resultatExercice'), cp.resultat)}
           ${lr('DJ', 'Subventions d\'investissement',              0)}
           ${lr('DK', 'Provisions réglementées',                    0)}
           ${lt('DL', 'TOTAL CAPITAUX PROPRES (I)',                 cp.total, null, null, 'lf-total')}
 
           <tr class="lf-section"><td colspan="3">PROVISIONS</td></tr>
-          ${lr('DM', 'Provisions pour risques',                    pv.risques)}
-          ${lr('DN', 'Provisions pour charges',                    pv.charges)}
+          ${lr('DM', 'Provisions pour risques'                   + compteBadge('provisionsRisques'), pv.risques)}
+          ${lr('DN', 'Provisions pour charges'                   + compteBadge('provisionsCharges'), pv.charges)}
           ${lt('DO', 'TOTAL PROVISIONS (II)',                      pv.total, null, null, 'lf-total')}
 
           <tr class="lf-section"><td colspan="3">DETTES</td></tr>
           ${lr('DP', 'Emprunts obligataires convertibles',         0)}
           ${lr('DQ', 'Autres emprunts obligataires',               0)}
-          ${lr('DR', 'Emprunts et dettes auprès des établissements de crédit', dt.emprunts)}
+          ${lr('DR', 'Emprunts et dettes auprès des établissements de crédit' + compteBadge('emprunts'), dt.emprunts)}
           ${lr('DS', 'Emprunts et dettes financières divers',      0)}
           ${lr('DT', 'Avances et acomptes reçus sur commandes',    0)}
-          ${lr('DU', 'Dettes fournisseurs et comptes rattachés',   dt.fournisseurs)}
-          ${lr('DV', 'Dettes fiscales et sociales',                dt.fiscalesSociales)}
+          ${lr('DU', 'Dettes fournisseurs et comptes rattachés'   + compteBadge('fournisseurs'),      dt.fournisseurs)}
+          ${lr('DV', 'Dettes fiscales et sociales'                + compteBadge('fiscalesSociales'),  dt.fiscalesSociales)}
           ${lr('DW', 'Dettes sur immobilisations et comptes rat.', 0)}
-          ${lr('DX', 'Autres dettes',                              dt.autresDettes)}
-          ${lr('DY', 'Produits constatés d\'avance',               rg.produitsConstates)}
+          ${lr('DX', 'Autres dettes'                              + compteBadge('autresDettes'),      dt.autresDettes)}
+          ${lr('DY', 'Produits constatés d\'avance'               + compteBadge('produitsConstates'), rg.produitsConstates)}
           ${lt('DZ', 'TOTAL DETTES (III)',                         dt.total, null, null, 'lf-total')}
           ${lt('EE', 'TOTAL GÉNÉRAL (I + II + III)',               p.total, null, null, 'lf-grandtotal')}
         </tbody>
@@ -295,17 +295,17 @@ function build2052(data) {
           ${lr('FA', 'Ventes de marchandises',                     data.meta.secteur === 'commerce'   ? pe.ca : 0)}
           ${lr('FB', 'Production vendue (biens)',                  data.meta.secteur === 'industrie'  ? pe.ca : 0)}
           ${lr('FC', 'Production vendue (services)',               data.meta.secteur === 'services'   ? pe.ca : 0)}
-          ${lt('FD', 'Chiffre d\'affaires net',                    pe.ca, null, null, 'lf-subtotal')}
-          ${lr('FE', 'Production stockée',                         pe.productionStockee)}
+          ${lt('FD', 'Chiffre d\'affaires net'                   + compteBadge('ca'), pe.ca, null, null, 'lf-subtotal')}
+          ${lr('FE', 'Production stockée'                        + compteBadge('productionStockee'), pe.productionStockee)}
           ${lr('FF', 'Production immobilisée',                     0)}
-          ${lr('FG', 'Subventions d\'exploitation',                pe.subventions)}
+          ${lr('FG', 'Subventions d\'exploitation'               + compteBadge('subventions'),       pe.subventions)}
           ${lr('FH', 'Reprises sur amortissements, dépréciations', 0)}
-          ${lr('FI', 'Autres produits',                            pe.autresProduits)}
+          ${lr('FI', 'Autres produits'                           + compteBadge('autresProduits'),    pe.autresProduits)}
           ${lt('FJ', 'TOTAL PRODUITS D\'EXPLOITATION (I)',         pe.total, null, null, 'lf-total')}
 
           <tr class="lf-section"><td colspan="3">PRODUITS FINANCIERS</td></tr>
           ${lr('GF', 'Produits financiers de participations',       0)}
-          ${lr('GG', 'Produits des autres valeurs mob. et créances', r.produitsFinanciers)}
+          ${lr('GG', 'Produits des autres valeurs mob. et créances' + compteBadge('produitsFinanciers'), r.produitsFinanciers)}
           ${lr('GH', 'Autres intérêts et produits assimilés',       0)}
           ${lr('GI', 'Reprises sur dépréciations, prov. financières', 0)}
           ${lr('GJ', 'Différences positives de change',             0)}
@@ -313,7 +313,7 @@ function build2052(data) {
           ${lt('GL', 'TOTAL PRODUITS FINANCIERS (II)',              r.produitsFinanciers, null, null, 'lf-total')}
 
           <tr class="lf-section"><td colspan="3">PRODUITS EXCEPTIONNELS</td></tr>
-          ${lr('HA', 'Produits exceptionnels sur opérations de gestion', r.produitsExceptionnels)}
+          ${lr('HA', 'Produits exceptionnels sur opérations de gestion' + compteBadge('produitsExceptionnels'), r.produitsExceptionnels)}
           ${lr('HB', 'Produits exceptionnels sur opérations en capital', 0)}
           ${lr('HC', 'Reprises sur dépréciations, prov. exception.',     0)}
           ${lt('HD', 'TOTAL PRODUITS EXCEPTIONNELS (III)',          r.produitsExceptionnels, null, null, 'lf-total')}
@@ -350,15 +350,15 @@ function build2053(data) {
         </thead>
         <tbody>
           <tr class="lf-section"><td colspan="3">CHARGES D'EXPLOITATION</td></tr>
-          ${lr('GA', 'Achats de marchandises',                     ce.achatsMarchandises)}
-          ${lr('GB', 'Variation de stocks (marchandises)',         ce.variationStocks)}
-          ${lr('GC', 'Achats de matières premières et approv.',    ce.achatsMatieres)}
+          ${lr('GA', 'Achats de marchandises'                    + compteBadge('achatsMarchandises'), ce.achatsMarchandises)}
+          ${lr('GB', 'Variation de stocks (marchandises)'        + compteBadge('variationStocks'),    ce.variationStocks)}
+          ${lr('GC', 'Achats de matières premières et approv.'   + compteBadge('achatsMatieres'),     ce.achatsMatieres)}
           ${lr('GD', 'Variation de stocks (MP et approv.)',        0)}
-          ${lr('GE', 'Autres achats et charges externes',          ce.autresAchats)}
-          ${lr('GF', 'Impôts, taxes et versements assimilés',      ce.impotsTaxes)}
-          ${lr('GG', 'Salaires et traitements',                    Math.round(ce.chargesPersonnel / 1.42))}
+          ${lr('GE', 'Autres achats et charges externes'         + compteBadge('autresAchats'),       ce.autresAchats)}
+          ${lr('GF', 'Impôts, taxes et versements assimilés'     + compteBadge('impotsTaxes'),        ce.impotsTaxes)}
+          ${lr('GG', 'Salaires et traitements'                   + compteBadge('chargesPersonnel'),   Math.round(ce.chargesPersonnel / 1.42))}
           ${lr('GH', 'Charges sociales',                           ce.chargesPersonnel - Math.round(ce.chargesPersonnel / 1.42))}
-          ${lr('GI', 'Dotations aux amortissements — immos',       ce.dotationsAmort)}
+          ${lr('GI', 'Dotations aux amortissements — immos'      + compteBadge('dotationsAmort'),     ce.dotationsAmort)}
           ${lr('GJ', 'Dotations aux dépréciations — actif circ.',  0)}
           ${lr('GK', 'Dotations aux provisions',                   0)}
           ${lr('GL', 'Autres charges',                             ce.autresCharges)}
@@ -367,7 +367,7 @@ function build2053(data) {
 
           <tr class="lf-section"><td colspan="3">CHARGES FINANCIÈRES</td></tr>
           ${lr('GQ', 'Dotations aux amortissements, dépréciations', 0)}
-          ${lr('GR', 'Intérêts et charges assimilées',              r.chargesFinancieres)}
+          ${lr('GR', 'Intérêts et charges assimilées'             + compteBadge('chargesFinancieres'), r.chargesFinancieres)}
           ${lr('GS', 'Différences négatives de change',             0)}
           ${lr('GT', 'Charges nettes sur cessions de valeurs mob.', 0)}
           ${lt('GU', 'TOTAL CHARGES FINANCIÈRES (III)',             r.chargesFinancieres, null, null, 'lf-total')}
@@ -375,14 +375,14 @@ function build2053(data) {
           ${lt('GW', 'RÉSULTAT COURANT AVANT IMPÔTS (I-II+III-IV)', r.resultatCourant, null, null, 'lf-resultat')}
 
           <tr class="lf-section"><td colspan="3">CHARGES EXCEPTIONNELLES</td></tr>
-          ${lr('HE', 'Charges exceptionnelles sur opérations de gestion', r.chargesExceptionnelles)}
+          ${lr('HE', 'Charges exceptionnelles sur opérations de gestion' + compteBadge('chargesExceptionnelles'), r.chargesExceptionnelles)}
           ${lr('HF', 'Charges exceptionnelles sur opérations en capital',  0)}
           ${lr('HG', 'Dotations aux amortissements, dépréciations, prov.', 0)}
           ${lt('HH', 'TOTAL CHARGES EXCEPTIONNELLES (V)',           r.chargesExceptionnelles, null, null, 'lf-total')}
           ${lt('HI', 'RÉSULTAT EXCEPTIONNEL (IV-V)',                r.resultatExceptionnel, null, null, 'lf-resultat')}
 
-          ${lr('HK', 'Participation des salariés aux résultats',    r.participation)}
-          ${lr('HL', 'Impôts sur les bénéfices',                   r.impots)}
+          ${lr('HK', 'Participation des salariés aux résultats'   + compteBadge('participation'), r.participation)}
+          ${lr('HL', 'Impôts sur les bénéfices'                   + compteBadge('impots'),        r.impots)}
           ${lt('HM', 'TOTAL GÉNÉRAL DES CHARGES',
                       ce.total + r.chargesFinancieres + r.chargesExceptionnelles + r.participation + r.impots, null, null, 'lf-grandtotal')}
           ${lt('HN', r.resultatNet >= 0 ? 'BÉNÉFICE' : 'PERTE',   Math.abs(r.resultatNet), null, null, 'lf-grandtotal')}

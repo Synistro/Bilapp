@@ -20,8 +20,8 @@
 
 'use strict';
 
-import { fmt, fmtResultat, fmtDateFR } from '../utils/doc-helpers.js';
-import { DUREES_AMORT }                 from '../core/constants.js';
+import { fmt, fmtResultat, fmtDateFR, hintIcon } from '../utils/doc-helpers.js';
+import { DUREES_AMORT }                          from '../core/constants.js';
 
 // ============================================================
 // UTILITAIRES INTERNES
@@ -110,23 +110,23 @@ function buildTableauImmos(immoN, immoN1) {
         </thead>
         <tbody>
           <tr class="row--section"><td colspan="5">Immobilisations incorporelles</td></tr>
-          ${rowImmo('Frais d\'établissement',     i.incorporel.fraisEtablissement.brut, b1(x => x.incorporel.fraisEtablissement.brut))}
-          ${rowImmo('Frais de R&D',               i.incorporel.fraisRD.brut,            b1(x => x.incorporel.fraisRD.brut))}
-          ${rowImmo('Brevets, licences, marques', i.incorporel.brevets.brut,            b1(x => x.incorporel.brevets.brut))}
-          ${rowImmo('Fonds commercial',           i.incorporel.fondsCommercial.brut,    b1(x => x.incorporel.fondsCommercial.brut))}
-          ${rowImmo('Autres incorporelles',       i.incorporel.autresIncorporel.brut,   b1(x => x.incorporel.autresIncorporel.brut))}
+          ${rowImmo('Frais d\'établissement'     + hintIcon('fraisEtablissement'), i.incorporel.fraisEtablissement.brut, b1(x => x.incorporel.fraisEtablissement.brut))}
+          ${rowImmo('Frais de R&D'               + hintIcon('fraisRD'),            i.incorporel.fraisRD.brut,            b1(x => x.incorporel.fraisRD.brut))}
+          ${rowImmo('Brevets, licences, marques' + hintIcon('brevets'),            i.incorporel.brevets.brut,            b1(x => x.incorporel.brevets.brut))}
+          ${rowImmo('Fonds commercial'           + hintIcon('fondsCommercial'),    i.incorporel.fondsCommercial.brut,    b1(x => x.incorporel.fondsCommercial.brut))}
+          ${rowImmo('Autres incorporelles'       + hintIcon('autresIncorporel'),   i.incorporel.autresIncorporel.brut,   b1(x => x.incorporel.autresIncorporel.brut))}
           ${rowImmo('Sous-total incorporel',      i.incorporel.total.brut,              b1(x => x.incorporel.total.brut), true)}
 
           <tr class="row--section"><td colspan="5">Immobilisations corporelles</td></tr>
-          ${rowImmo('Terrains',                 i.corporel.terrains.brut,       b1(x => x.corporel.terrains.brut))}
-          ${rowImmo('Constructions',            i.corporel.constructions.brut,  b1(x => x.corporel.constructions.brut))}
-          ${rowImmo('Installations techniques', i.corporel.installations.brut,  b1(x => x.corporel.installations.brut))}
-          ${rowImmo('Autres corporelles',       i.corporel.autresCorporel.brut, b1(x => x.corporel.autresCorporel.brut))}
+          ${rowImmo('Terrains'                 + hintIcon('terrains'),       i.corporel.terrains.brut,       b1(x => x.corporel.terrains.brut))}
+          ${rowImmo('Constructions'            + hintIcon('constructions'),  i.corporel.constructions.brut,  b1(x => x.corporel.constructions.brut))}
+          ${rowImmo('Installations techniques' + hintIcon('installations'),  i.corporel.installations.brut,  b1(x => x.corporel.installations.brut))}
+          ${rowImmo('Autres corporelles'       + hintIcon('autresCorporel'), i.corporel.autresCorporel.brut, b1(x => x.corporel.autresCorporel.brut))}
           ${rowImmo('Sous-total corporel',      i.corporel.total.brut,          b1(x => x.corporel.total.brut), true)}
 
           <tr class="row--section"><td colspan="5">Immobilisations financières</td></tr>
-          ${rowImmo('Titres de participation',    i.financier.participations.brut,   b1(x => x.financier.participations.brut))}
-          ${rowImmo('Autres financières',         i.financier.autresFinancier.brut,  b1(x => x.financier.autresFinancier.brut))}
+          ${rowImmo('Titres de participation' + hintIcon('participations'),  i.financier.participations.brut,   b1(x => x.financier.participations.brut))}
+          ${rowImmo('Autres financières'      + hintIcon('autresFinancier'), i.financier.autresFinancier.brut,  b1(x => x.financier.autresFinancier.brut))}
           ${rowImmo('Sous-total financier',       i.financier.total.brut,            b1(x => x.financier.total.brut), true)}
 
           <tr class="row--total">
@@ -203,16 +203,16 @@ function buildTableauAmorts(immoN, immoN1, dotationsTotalesN) {
         </thead>
         <tbody>
           <tr class="row--section"><td colspan="4">Immobilisations incorporelles</td></tr>
-          ${rowAmort('Frais d\'établissement',     i.incorporel.fraisEtablissement.amort, b1(x => x.incorporel.fraisEtablissement.amort))}
-          ${rowAmort('Frais de R&D',               i.incorporel.fraisRD.amort,            b1(x => x.incorporel.fraisRD.amort))}
-          ${rowAmort('Brevets, licences, marques', i.incorporel.brevets.amort,            b1(x => x.incorporel.brevets.amort))}
-          ${rowAmort('Autres incorporelles',       i.incorporel.autresIncorporel.amort,   b1(x => x.incorporel.autresIncorporel.amort))}
+          ${rowAmort('Frais d\'établissement'     + hintIcon('fraisEtablissement'), i.incorporel.fraisEtablissement.amort, b1(x => x.incorporel.fraisEtablissement.amort))}
+          ${rowAmort('Frais de R&D'               + hintIcon('fraisRD'),            i.incorporel.fraisRD.amort,            b1(x => x.incorporel.fraisRD.amort))}
+          ${rowAmort('Brevets, licences, marques' + hintIcon('brevets'),            i.incorporel.brevets.amort,            b1(x => x.incorporel.brevets.amort))}
+          ${rowAmort('Autres incorporelles'       + hintIcon('autresIncorporel'),   i.incorporel.autresIncorporel.amort,   b1(x => x.incorporel.autresIncorporel.amort))}
           ${rowAmort('Sous-total incorporel',      i.incorporel.total.amort,              b1(x => x.incorporel.total.amort), true)}
 
           <tr class="row--section"><td colspan="4">Immobilisations corporelles</td></tr>
-          ${rowAmort('Constructions',            i.corporel.constructions.amort,  b1(x => x.corporel.constructions.amort))}
-          ${rowAmort('Installations techniques', i.corporel.installations.amort,  b1(x => x.corporel.installations.amort))}
-          ${rowAmort('Autres corporelles',       i.corporel.autresCorporel.amort, b1(x => x.corporel.autresCorporel.amort))}
+          ${rowAmort('Constructions'            + hintIcon('constructions'),  i.corporel.constructions.amort,  b1(x => x.corporel.constructions.amort))}
+          ${rowAmort('Installations techniques' + hintIcon('installations'),  i.corporel.installations.amort,  b1(x => x.corporel.installations.amort))}
+          ${rowAmort('Autres corporelles'       + hintIcon('autresCorporel'), i.corporel.autresCorporel.amort, b1(x => x.corporel.autresCorporel.amort))}
           ${rowAmort('Sous-total corporel',      i.corporel.total.amort,          b1(x => x.corporel.total.amort), true)}
 
           <tr class="row--total">
@@ -283,12 +283,12 @@ function buildVariationCP(cpN, cpN1) {
           </tr>
         </thead>
         <tbody>
-          ${rowCP('Capital social',          cpN.capital,        hasN1 ? cpN1.capital        : null)}
-          ${rowCP('Primes d\'émission',      cpN.primesEmission, hasN1 ? cpN1.primesEmission : null)}
-          ${rowCP('Réserve légale',          cpN.reserveLegale,  hasN1 ? cpN1.reserveLegale  : null)}
-          ${rowCP('Autres réserves',         cpN.autresReserves, hasN1 ? cpN1.autresReserves : null)}
-          ${rowCP('Report à nouveau',        cpN.reportANouveau, hasN1 ? cpN1.reportANouveau : null)}
-          ${rowCP('Résultat de l\'exercice', cpN.resultat,       hasN1 ? cpN1.resultat       : null)}
+          ${rowCP('Capital social'          + hintIcon('capital'),          cpN.capital,        hasN1 ? cpN1.capital        : null)}
+          ${rowCP('Primes d\'émission'      + hintIcon('primesEmission'),   cpN.primesEmission, hasN1 ? cpN1.primesEmission : null)}
+          ${rowCP('Réserve légale'          + hintIcon('reserveLegale'),    cpN.reserveLegale,  hasN1 ? cpN1.reserveLegale  : null)}
+          ${rowCP('Autres réserves'         + hintIcon('autresReserves'),   cpN.autresReserves, hasN1 ? cpN1.autresReserves : null)}
+          ${rowCP('Report à nouveau'        + hintIcon('reportANouveau'),   cpN.reportANouveau, hasN1 ? cpN1.reportANouveau : null)}
+          ${rowCP('Résultat de l\'exercice' + hintIcon('resultatExercice'), cpN.resultat,       hasN1 ? cpN1.resultat       : null)}
           ${rowCP('TOTAL CAPITAUX PROPRES',  cpN.total,          hasN1 ? cpN1.total          : null, true)}
         </tbody>
       </table>

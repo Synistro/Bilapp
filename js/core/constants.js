@@ -208,6 +208,85 @@ export const PCG = {
 };
 
 // ============================================================
+// RAPPEL DU PLAN COMPTABLE — POSTE → N° DE COMPTE PCG
+// ------------------------------------------------------------
+// Associe chaque poste (clé sémantique, identique aux clés de HINTS)
+// à son numéro de compte principal du Plan Comptable Général.
+// Utilisé par hintIcon() pour afficher un badge « rappel PCG » et
+// enrichir l'infobulle élève. Pédagogique — numéro du compte le plus
+// représentatif du poste (pas une ventilation exhaustive).
+// ============================================================
+
+export const COMPTES_POSTES = {
+  // Actif immobilisé — incorporel
+  fraisEtablissement: '201',
+  fraisRD:            '203',
+  brevets:            '205',
+  fondsCommercial:    '207',
+  autresIncorporel:   '208',
+  // Actif immobilisé — corporel
+  terrains:           '211',
+  constructions:      '213',
+  installations:      '215',
+  autresCorporel:     '218',
+  // Actif immobilisé — financier
+  participations:     '261',
+  autresFinancier:    '274',
+  // Actif circulant — stocks
+  matieresPremières:  '31',
+  enCours:            '33',
+  produitsFinis:      '35',
+  marchandises:       '37',
+  // Actif circulant — créances
+  clients:            '411',
+  autresCreances:     '46',
+  // Actif circulant — disponibilités
+  vmp:                '50',
+  banqueCaisse:       '512',
+  // Comptes de régularisation — actif
+  chargesConstatees:  '486',
+  // Passif — capitaux propres
+  capital:            '101',
+  primesEmission:     '104',
+  reserveLegale:      '1061',
+  autresReserves:     '1068',
+  reportANouveau:     '110',
+  resultatExercice:   '120',
+  // Passif — provisions
+  provisionsRisques:  '151',
+  provisionsCharges:  '158',
+  // Passif — dettes
+  emprunts:           '164',
+  fournisseurs:       '401',
+  fiscalesSociales:   '44',
+  autresDettes:       '46',
+  // Comptes de régularisation — passif
+  produitsConstates:  '487',
+  // Compte de résultat — produits
+  ca:                 '70',
+  productionStockee:  '713',
+  subventions:        '74',
+  autresProduits:     '758',
+  // Compte de résultat — charges
+  achatsMarchandises: '607',
+  variationStocks:    '603',
+  achatsMatieres:     '601',
+  autresAchats:       '61/62',
+  impotsTaxes:        '63',
+  chargesPersonnel:   '64',
+  dotationsAmort:     '681',
+  // Compte de résultat — financier
+  produitsFinanciers: '76',
+  chargesFinancieres: '66',
+  // Compte de résultat — exceptionnel
+  produitsExceptionnels:  '77',
+  chargesExceptionnelles: '67',
+  // Compte de résultat — IS et participation
+  participation:      '691',
+  impots:             '695',
+};
+
+// ============================================================
 // RATIOS SECTORIELS
 // ============================================================
 

@@ -12,7 +12,8 @@
 
 'use strict';
 
-import { HINTS } from '../core/hints.js';
+import { HINTS }          from '../core/hints.js';
+import { COMPTES_POSTES } from '../core/constants.js';
 
 // ============================================================
 // FORMATAGE DES MONTANTS
@@ -58,21 +59,49 @@ export function zeroCls(n) {
 // ============================================================
 
 /**
- * Retourne un bouton icône hint si la clé existe dans HINTS, '' sinon.
- * Le texte du hint est porté par data-hint (lu par tooltip.js).
+ * Retourne le rappel pédagogique d'un poste : un badge visible avec le
+ * numéro de compte du Plan Comptable Général (PCG) suivi de l'icône ⓘ dont
+ * l'infobulle rappelle le compte puis donne la définition élève.
  *
- * Rendu exemple :
- *   <button class="hint-icon" data-hint="Ce que les clients doivent." aria-label="Aide : Clients" tabindex="-1">ⓘ</button>
+ * - Badge visible en permanence si la clé a un compte (COMPTES_POSTES).
+ * - Infobulle = "Compte <n°> — <définition>" (l'un ou l'autre s'il manque).
+ * - Retourne '' si ni compte ni définition (ex. lignes de sous-total).
  *
- * @param {string} key  Clé dans HINTS (ex. 'clients', 'ca')
+ * Rendu exemple (clé 'clients') :
+ *   <span class="poste-compte" title="…">411</span><button class="hint-icon" data-hint="Compte 411 — Ce que les clients doivent." …>ⓘ</button>
+ *
+ * @param {string} key  Clé sémantique du poste (ex. 'clients', 'ca')
  * @returns {string}    HTML ou ''
  */
+/**
+ * Badge visible du numéro de compte PCG d'un poste (sans icône ni infobulle).
+ * Utilisé là où l'on veut seulement le rappel du compte (ex. liasse fiscale,
+ * qui garde par ailleurs ses codes Cerfa).
+ * @param {string} key  Clé sémantique du poste
+ * @returns {string}    HTML ou ''
+ */
+export function compteBadge(key) {
+  const compte = COMPTES_POSTES[key];
+  return compte
+    ? `<span class="poste-compte" title="Compte du Plan Comptable Général">${compte}</span>`
+    : '';
+}
+
 export function hintIcon(key) {
-  const text = HINTS[key];
-  if (!text) return '';
-  // Échappement minimal des guillemets pour l'attribut HTML
-  const safe = text.replace(/"/g, '&quot;');
-  return `<button class="hint-icon" data-hint="${safe}" aria-label="Aide" tabindex="-1">ⓘ</button>`;
+  const compte = COMPTES_POSTES[key];
+  const def    = HINTS[key];
+  if (!compte && !def) return '';
+
+  // Badge visible du numéro de compte PCG (rappel permanent)
+  const badge = compteBadge(key);
+
+  // Infobulle : rappel du compte + définition élève
+  const hintText = [compte ? `Compte ${compte}` : '', def].filter(Boolean).join(' — ');
+  const icon = hintText
+    ? `<button class="hint-icon" data-hint="${hintText.replace(/"/g, '&quot;')}" aria-label="Aide" tabindex="-1">ⓘ</button>`
+    : '';
+
+  return `${badge}${icon}`;
 }
 
 // ============================================================

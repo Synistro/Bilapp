@@ -29,6 +29,12 @@ Tous les documents portent la mention obligatoire **"DOCUMENT FICTIF — À DES 
 - Définitions courtes orientées élèves, avec exemples concrets
 - **Masqués à l'impression** — les documents imprimés restent propres
 
+### Rappel du Plan Comptable Général
+- **Badge n° de compte PCG** affiché en permanence à côté de chaque poste (ex. Clients `411`, Capital `101`, Constructions `213`)
+- Présent sur **Bilan, Compte de résultat, Annexe et Liasse fiscale** (en complément des codes Cerfa)
+- Le n° de compte est aussi **rappelé dans l'infobulle ⓘ** (« Compte 411 — Factures émises… »)
+- Mapping centralisé `COMPTES_POSTES` (constants.js), badge conservé à l'impression
+
 ### Analyse financière
 - **Onglet Analyse** — FR, BFR, Trésorerie Nette, SIG complet (VA, EBE, EBIT, RCAI), CAF
 - **Ratios** — ROE, ROA, marge nette, autonomie financière avec interprétations contextuelles

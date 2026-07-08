@@ -398,6 +398,24 @@ a:hover {
   outline: none;
 }
 
+/* Badge rappel du numéro de compte PCG — visible en permanence */
+.poste-compte {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 5px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--color-accent);
+  background: var(--color-border-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  vertical-align: middle;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
 /* Bulle tooltip */
 .hint-bubble {
   position: absolute;
