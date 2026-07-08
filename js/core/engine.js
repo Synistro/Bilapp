@@ -293,6 +293,52 @@ function calculerPassif(params, ca, resultatNet) {
 }
 
 // ============================================================
+// ÉQUILIBRAGE ACTIF / PASSIF
+// ============================================================
+
+/**
+ * Garantit l'égalité stricte actif.totalNet === passif.total.
+ *
+ * La trésorerie (banqueCaisse) sert de variable d'ajustement, mais elle est
+ * plafonnée par le bas dans calculerActifCirculant (elle ne peut pas devenir
+ * négative). Quand les actifs hors trésorerie dépassent déjà le financement
+ * disponible, l'actif reste plus grand que le passif : on comble alors le
+ * déficit de financement par un **emprunt / découvert bancaire** au passif —
+ * c'est ainsi qu'une entreprise finance des actifs qu'elle ne peut pas payer
+ * en cash. Le bilan retombe équilibré au centime près.
+ *
+ * NB : ne touche jamais au résultat — uniquement à la structure actif/passif.
+ *
+ * @param {object} circulant   bilan.actif.circulant (muté)
+ * @param {number} totalNetActif  total net actif courant
+ * @param {object} passif      bilan.passif (muté)
+ * @returns {number}           total net actif final (= passif.total)
+ */
+function equilibrerActifPassif(circulant, totalNetActif, passif) {
+  const ecart = passif.total - totalNetActif; // >0 : actif à compléter ; <0 : passif à compléter
+  if (ecart === 0) return totalNetActif;
+
+  if (ecart > 0) {
+    // Actif plus petit que le passif : la trésorerie absorbe l'écart.
+    const treso = circulant.disponibilites.banqueCaisse;
+    treso.net  += ecart;
+    treso.brut += ecart;
+    circulant.disponibilites.total.net  += ecart;
+    circulant.disponibilites.total.brut += ecart;
+    circulant.total.net  += ecart;
+    circulant.total.brut += ecart;
+    return totalNetActif + ecart;
+  }
+
+  // Actif plus grand que le passif : financement complémentaire par emprunt.
+  const decouvert = -ecart;
+  passif.dettes.emprunts += decouvert;
+  passif.dettes.total    += decouvert;
+  passif.total           += decouvert;
+  return totalNetActif;
+}
+
+// ============================================================
 // FONCTION PRINCIPALE
 // ============================================================
 
@@ -336,16 +382,7 @@ export function generate(params) {
   const { circulant, regularisation } = calculerActifCirculant(params, ca, passif.total, actifImmobilise.total.net);
 
   let totalNet = Math.round(actifImmobilise.total.net + circulant.total.net + regularisation.total.net);
-  const ecart  = passif.total - totalNet;
-  if (Math.abs(ecart) <= 1 && ecart !== 0) {
-    circulant.disponibilites.banqueCaisse.net  += ecart;
-    circulant.disponibilites.banqueCaisse.brut += ecart;
-    circulant.disponibilites.total.net         += ecart;
-    circulant.disponibilites.total.brut        += ecart;
-    circulant.total.net                        += ecart;
-    circulant.total.brut                       += ecart;
-    totalNet += ecart;
-  }
+  totalNet = equilibrerActifPassif(circulant, totalNet, passif);
 
   const bilan = {
     actif: { immobilise: actifImmobilise, circulant, regularisation, totalNet },
@@ -361,16 +398,7 @@ export function generate(params) {
     const immoN1     = calculerActifImmobilise(params, caN1);
     const { circulant: circN1, regularisation: regulN1 } = calculerActifCirculant(params, caN1, passifN1.total, immoN1.total.net);
     let totalNetN1 = Math.round(immoN1.total.net + circN1.total.net + regulN1.total.net);
-    const ecartN1  = passifN1.total - totalNetN1;
-    if (Math.abs(ecartN1) <= 1 && ecartN1 !== 0) {
-      circN1.disponibilites.banqueCaisse.net  += ecartN1;
-      circN1.disponibilites.banqueCaisse.brut += ecartN1;
-      circN1.disponibilites.total.net         += ecartN1;
-      circN1.disponibilites.total.brut        += ecartN1;
-      circN1.total.net                        += ecartN1;
-      circN1.total.brut                       += ecartN1;
-      totalNetN1 += ecartN1;
-    }
+    totalNetN1 = equilibrerActifPassif(circN1, totalNetN1, passifN1);
     n1 = {
       meta: {
         anneeExercice:     params.societe.anneeExercice - 1,

@@ -162,6 +162,9 @@ function _controles(data) {
   const actifNet   = data.bilan.actif.totalNet;
   const passifTot  = data.bilan.passif.total;
   const ecartBilan = Math.abs(actifNet - passifTot);
+  // Tolérance ±1 € : même convention que le validateur (V01) — un écart d'arrondi
+  // ne doit pas déclencher un rejet, seul un vrai déséquilibre le doit.
+  const bilanEquilibre = ecartBilan <= 1;
 
   const resCR    = data.resultat.resultatNet;
   const resBilan = data.bilan.passif.capitauxPropres.resultat;
@@ -170,8 +173,8 @@ function _controles(data) {
   const controles = [
     {
       label:  'Équilibre du bilan (Actif = Passif)',
-      ok:     ecartBilan === 0,
-      detail: ecartBilan === 0
+      ok:     bilanEquilibre,
+      detail: bilanEquilibre
         ? `${euro(actifNet)} = ${euro(passifTot)}`
         : `écart de ${euro(ecartBilan)}`,
       aide: {
