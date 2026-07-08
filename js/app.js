@@ -21,9 +21,8 @@
 import { initForm }        from './modules/form.js';
 import { generate }        from './core/engine.js';
 import { validate }        from './core/validator.js';
-import { renderDocuments } from './modules/bilan.js';
+import { renderDocuments, renderLoadedSession } from './modules/bilan.js';
 import { loadSession }     from './export/session.js';
-import { clearOverrides, setOverride } from './core/overrides.js';
 
 // ============================================================
 // ÉTAT APPLICATIF
@@ -97,13 +96,9 @@ function _bindLoadSessionHome() {
     input.value = '';
     try {
       const payload = await loadSession(file);
-      clearOverrides();
-      for (const [path, val] of payload.overrides) {
-        setOverride(path, val);
-      }
-      _bilanData   = payload.data;
-      _bilanParams = payload.params;
-      renderDocuments(_bilanData, _bilanParams);
+      // Chemin de chargement unique — restaure les postes verrouillés et le
+      // N-1 figé. NE PAS utiliser renderDocuments() ici (elle purge les verrous).
+      renderLoadedSession(payload);
     } catch (err) {
       alert(`Impossible de charger la session :\n${err.message}`);
     }

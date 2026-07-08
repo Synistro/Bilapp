@@ -334,14 +334,7 @@ function bindSessionButtons() {
       inputFile.value = '';
       try {
         const payload = await loadSession(file);
-        clearOverrides();
-        for (const [path, val] of payload.overrides) setOverride(path, val);
-        _currentData   = payload.data;
-        _currentParams = payload.params;
-        _dataN1Figee   = payload.dataN1Figee ?? null;
-        const defaultTab = payload.params.output?.bilan ? 'bilan'
-          : payload.params.output?.compteResultat ? 'resultat' : 'annexe';
-        renderTab(defaultTab, 0);
+        renderLoadedSession(payload);
       } catch (err) {
         console.error(err.message);
         alert(`Impossible de charger la session :\n${err.message}`);
@@ -660,12 +653,37 @@ export function renderDocuments(data, params) {
   _currentData   = data;
   _currentParams = params;
   _dataN1Figee   = null;
-  renderTab(
-    params.output.bilan          ? 'bilan'    :
-    params.output.compteResultat ? 'resultat' :
-    params.output.annexe         ? 'annexe'   :
-    params.output.analyse        ? 'analyse'  :
-    params.output.liasseFiscale  ? 'liasse'   : 'teledec',
-    0
-  );
+  renderTab(_defaultTab(params.output), 0);
+}
+
+/**
+ * Restaure et affiche une session chargée depuis un fichier .json.
+ * Point d'entrée unique pour les deux boutons « Charger » (accueil + document).
+ *
+ * IMPORTANT : ne pas passer par renderDocuments() ici — celle-ci commence par
+ * clearOverrides() (comportement voulu pour une génération neuve), ce qui
+ * effacerait les postes verrouillés qu'on vient justement de restaurer.
+ *
+ * @param {object} payload  SessionPayload retourné par loadSession()
+ */
+export function renderLoadedSession(payload) {
+  clearOverrides();
+  for (const [path, val] of payload.overrides) setOverride(path, val);
+  _currentData   = payload.data;
+  _currentParams = payload.params;
+  _dataN1Figee   = payload.dataN1Figee ?? null;
+  renderTab(_defaultTab(payload.params.output), 0);
+}
+
+/**
+ * Onglet affiché par défaut selon les documents disponibles.
+ * @param {object} output  BilanParams.output
+ * @returns {string}
+ */
+function _defaultTab(output = {}) {
+  return output.bilan          ? 'bilan'    :
+         output.compteResultat ? 'resultat' :
+         output.annexe         ? 'annexe'   :
+         output.analyse        ? 'analyse'  :
+         output.liasseFiscale  ? 'liasse'   : 'teledec';
 }
