@@ -10,7 +10,7 @@
 
 'use strict';
 
-import { fmt, fmtResultat, zeroCls, hintIcon } from '../utils/doc-helpers.js';
+import { fmt, fmtResultat, zeroCls, hintIcon, lockToggle } from '../utils/doc-helpers.js';
 import { isLocked }                             from '../core/overrides.js';
 
 // ============================================================
@@ -36,7 +36,7 @@ function rowCR(libelle, montant, path, n1 = null, indent = true, hintKey = '') {
     <tr class="${locked ? 'has-lock' : ''}">
       <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}${hintIcon(hintKey)}</td>
       <td class="is-editable ${locked ? 'is-locked' : ''} ${zeroCls(montant)}"
-          data-path="${path}" data-value="${montant}">${fmt(montant)}</td>
+          data-path="${path}" data-value="${montant}">${lockToggle(path)}${fmt(montant)}</td>
       ${n1Cell}
     </tr>
   `;

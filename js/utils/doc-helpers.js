@@ -14,6 +14,7 @@
 
 import { HINTS }          from '../core/hints.js';
 import { COMPTES_POSTES } from '../core/constants.js';
+import { isLocked }       from '../core/overrides.js';
 
 // ============================================================
 // FORMATAGE DES MONTANTS
@@ -102,6 +103,29 @@ export function hintIcon(key) {
     : '';
 
   return `${badge}${icon}`;
+}
+
+// ============================================================
+// VERROU DE POSTE (LOCK TOGGLE)
+// ============================================================
+
+/**
+ * Bouton verrou d'une cellule éditable (🔓 / 🔒).
+ *
+ * Purement visuel : aucun listener propre. Le clic est capté par le listener
+ * de la cellule (délégation via e.target.closest('.lock-toggle')), ce qui le
+ * rend robuste aux re-rendus de cellule.
+ *
+ * @param {string} path  Chemin du poste (ex. 'bilan.passif.dettes.emprunts')
+ * @returns {string}     HTML du bouton, ou '' si path vide
+ */
+export function lockToggle(path) {
+  if (!path) return '';
+  const locked = isLocked(path);
+  const title  = locked
+    ? 'Déverrouiller — ce poste redeviendra recalculable'
+    : 'Verrouiller — figer ce poste lors des régénérations';
+  return `<button class="lock-toggle ${locked ? 'is-on' : ''}" tabindex="-1" aria-label="${locked ? 'Déverrouiller' : 'Verrouiller'}" title="${title}">${locked ? '🔒' : '🔓'}</button>`;
 }
 
 // ============================================================

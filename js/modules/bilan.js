@@ -10,12 +10,12 @@
 
 'use strict';
 import { buildLiasse }                                    from './liasse.js';
-import { fmt, zeroCls, buildHeader, buildTabs, hintIcon } from '../utils/doc-helpers.js';
+import { fmt, zeroCls, buildHeader, buildTabs, hintIcon, lockToggle } from '../utils/doc-helpers.js';
 import { buildResultat }                                  from './resultat.js';
 import { buildAnnexe }                                    from './annexe.js';
 import { buildAnalyse }                                   from './ratios.js';
 import { buildTeledec }                                   from './teledec.js';
-import { setOverride, isLocked, getOverrides, clearOverrides, countOverrides } from '../core/overrides.js';
+import { setOverride, removeOverride, isLocked, getOverrides, clearOverrides, countOverrides } from '../core/overrides.js';
 import { reconcile }                                      from '../core/reconcile.js';
 import { exportDocument }                                 from '../export/pdf.js';
 import { saveSession, loadSession }                       from '../export/session.js';
@@ -44,7 +44,6 @@ function parseInput(str) {
 
 function activerEdition(td, path, valeur, onCommit) {
   if (td.querySelector('.cell-input')) return;
-  const original = td.textContent.trim();
   const input    = document.createElement('input');
   input.type      = 'text';
   input.className = 'cell-input';
@@ -54,16 +53,25 @@ function activerEdition(td, path, valeur, onCommit) {
   td.appendChild(input);
   input.focus();
   input.select();
-  function commit() {
+
+  // Restaure le contenu de la cellule (valeur + bouton verrou) sans re-render
+  // complet. Le listener de clic est porté par la <td> (survit à innerHTML).
+  function restore() { td.innerHTML = lockToggle(path) + fmt(valeur); }
+
+  let done = false;
+  function finish(apply) {
+    if (done) return;
+    done = true;
     const parsed = parseInput(input.value);
-    if (parsed !== null && parsed !== valeur) { onCommit(path, parsed); }
-    else { td.textContent = original; }
+    if (apply && parsed !== null && parsed !== valeur) { onCommit(path, parsed); }
+    else { restore(); }
   }
+
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter')  { e.preventDefault(); commit(); }
-    if (e.key === 'Escape') { td.textContent = original; }
+    if (e.key === 'Enter')  { e.preventDefault(); finish(true); }
+    if (e.key === 'Escape') { finish(false); }
   });
-  input.addEventListener('blur', commit);
+  input.addEventListener('blur', () => finish(true));
 }
 
 // ============================================================
@@ -102,9 +110,9 @@ function rowActif(libelle, p, basePath, n1Net = null, indent = true, hintKey = '
     <tr class="${hasLock ? 'has-lock' : ''}">
       <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}${hintIcon(hintKey)}</td>
       <td class="is-editable ${lockedBrut  ? 'is-locked' : ''} ${zeroCls(p.brut)}"
-          data-path="${brutPath}"  data-value="${p.brut}">${fmt(p.brut)}</td>
+          data-path="${brutPath}"  data-value="${p.brut}">${lockToggle(brutPath)}${fmt(p.brut)}</td>
       <td class="is-editable ${lockedAmort ? 'is-locked' : ''} ${zeroCls(p.amort)}"
-          data-path="${amortPath}" data-value="${p.amort}">${fmt(p.amort)}</td>
+          data-path="${amortPath}" data-value="${p.amort}">${lockToggle(amortPath)}${fmt(p.amort)}</td>
       <td class="${zeroCls(p.net)}" data-path="${netPath}">${fmt(p.net)}</td>
       ${n1Cell}
     </tr>
@@ -214,7 +222,7 @@ function rowPassif(libelle, montant, path, n1 = null, indent = true, hintKey = '
     <tr class="${locked ? 'has-lock' : ''}">
       <td style="${indent ? 'padding-left:2rem' : ''}">${libelle}${hintIcon(hintKey)}</td>
       <td class="is-editable ${locked ? 'is-locked' : ''} ${zeroCls(montant)}"
-          data-path="${path}" data-value="${montant}">${fmt(montant)}</td>
+          data-path="${path}" data-value="${montant}">${lockToggle(path)}${fmt(montant)}</td>
       ${n1Cell}
     </tr>
   `;
@@ -289,8 +297,24 @@ function buildPassif(bilan, n1) {
 
 function bindEdition() {
   document.querySelectorAll('#docContent td.is-editable').forEach(td => {
-    td.addEventListener('click', () => {
-      const path   = td.dataset.path;
+    td.addEventListener('click', (e) => {
+      const path = td.dataset.path;
+
+      // Clic sur le verrou → bascule verrouillage/déverrouillage (sans édition)
+      if (e.target.closest('.lock-toggle')) {
+        if (isLocked(path)) {
+          removeOverride(path);
+        } else {
+          // Verrouille le poste à sa valeur actuelle (fige sans la changer)
+          setOverride(path, parseInt(td.dataset.value, 10) || 0);
+        }
+        const { data, desequilibre } = reconcile(_currentData, getOverrides(), _currentParams);
+        _currentData = data;
+        renderTab(_currentTab, desequilibre);
+        return;
+      }
+
+      // Sinon → édition inline de la valeur
       const valeur = parseInt(td.dataset.value, 10) || 0;
       activerEdition(td, path, valeur, (p, newVal) => {
         setOverride(p, newVal);

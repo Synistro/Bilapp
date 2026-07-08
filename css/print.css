@@ -194,6 +194,7 @@
   .doc-table td.is-zero     { color: #718096 !important; }
 
   /* Masquer les indicateurs d'édition */
+  .lock-toggle                                  { display: none !important; }
   .doc-table td.is-locked::after                { display: none !important; }
   .doc-table tr.has-lock td:first-child::before { display: none !important; }
 

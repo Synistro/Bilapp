@@ -53,8 +53,9 @@ Tous les documents portent la mention obligatoire **"DOCUMENT FICTIF — À DES 
 - Amortissements clampés (amort ≤ brut), cohérence CR ↔ bilan garantie
 
 ### Édition et workflow
-- **Édition inline** — cliquer sur n'importe quel poste pour le modifier ; les totaux se recalculent en cascade et le bilan reste équilibré
-- **Verrouillage de postes** — les valeurs modifiées sont protégées (🔒) et résistent aux recalculs
+- **Édition inline** — cliquer sur la valeur d'un poste pour la modifier ; les totaux se recalculent en cascade et le bilan reste équilibré
+- **Bouton verrou par cellule** — un 🔓 apparaît au survol de chaque poste éditable ; un clic **fige la valeur** (🔒) sans avoir à l'éditer, un nouveau clic la **déverrouille**. Idéal pour régénérer en gardant certains postes figés
+- **Verrouillage de postes** — les valeurs modifiées ou verrouillées sont protégées (🔒) et résistent aux recalculs
 - **Régénérer** — relance le moteur en conservant les postes verrouillés et le N-1 figé
 - **📅 Année suivante** — duplique le bilan courant en N-1 figé, génère un exercice N+1 avec un CA ancré sur le CA réel N (±15%), dates en heure locale pour éviter les décalages UTC
 - **Sauvegarde / Chargement de session** — export `.json` complet (format v4.0), rechargeable depuis l'accueil ; migration automatique des sessions v1–v3
